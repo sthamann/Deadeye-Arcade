@@ -16,8 +16,15 @@ public static class TeknoDisplaySetup
             if(field is null || field.Value==value) return;
             field.Value=value; changed=true;
         }
-        // Composited borderless fullscreen allows the gun menu to remain visible above DX9/OpenGL games.
-        Set("Windowed","1"); Set("CustomResolution","1");
+        string? Value(string name)=>document.Descendants("FieldInformation")
+            .FirstOrDefault(f=>f.Element("CategoryName")?.Value=="General" && f.Element("FieldName")?.Value==name)?.Element("FieldValue")?.Value;
+        // The vendor windowed RawInput route multiplies absolute coordinates by
+        // WPF's screen size in DIPs, then divides by a client size in pixels.
+        // At 200% scaling this confines aim to the upper-left quarter. Its
+        // fullscreen absolute route normalizes the HID range directly instead.
+        // GamePresentation still positions the renderer across the monitor.
+        bool absoluteRawInput=Value("Input API")=="RawInput" && Value("Use Relative Input")!="1";
+        Set("Windowed",absoluteRawInput?"0":"1"); Set("CustomResolution","1");
         Set("ResolutionWidth",width.ToString(System.Globalization.CultureInfo.InvariantCulture));
         Set("ResolutionHeight",height.ToString(System.Globalization.CultureInfo.InvariantCulture));
         if(!changed) return false;

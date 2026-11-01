@@ -20,7 +20,7 @@ English and German are supported. A second check leaves healthy files unchanged.
 | P1/P2 input assignments | Uses the connected gun identities for supported TeknoParrot, DemulShooter, MAME, RetroArch, Flycast, Supermodel, RPCS3 and Dolphin adapters. Physical USB identities survive RDP; index-based adapters require actual visible RawInput mice. |
 | Supported Dolphin accuracy profiles | Matches the disc region to the reviewed accuracy package, preserves learned aiming offsets and prepares independent RS3 DSU channels. Extraction uses Hybrid Ubershaders. |
 | Installed multiplayer plugins | Configures recognized HOTD 2: Remake and installed Blue Estate patch inputs according to their actual device format. Unknown plugin versions retain their own workflow. |
-| Supported game presentation | Adjusts known Aliens profile fields and Model 2 presentation; generic sessions retain their own renderer. Changed settings are recorded. |
+| Supported game presentation | Uses native resolution and the normalized fullscreen route for absolute RawInput guns in supported Aliens profiles, avoiding a scaled-desktop conversion that can confine aim to a quarter of the screen. Relative input keeps its windowed route. Model 2 presentation is also prepared; changed settings are recorded. |
 | Existing Lindbergh shared libraries | For the specific supported ElfLdr2 profiles, copies only absent, valid ELF libraries from the installed game into the loader search folder. |
 | Duplicate launches / difficult exit | Launch reservation and process ownership are built into every session. Start + Coin is the independent emergency gesture; a trigger hold is optional because autofire can interrupt it. |
 

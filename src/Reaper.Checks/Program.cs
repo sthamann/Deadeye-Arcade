@@ -953,6 +953,11 @@ RButton::y
     Check(alienXml.Descendants("JoystickButtons").Single(r=>r.Element("ButtonName")?.Value=="Player 1 Special").Element("RawInputButton")?.Element("MouseButton")?.Value=="MiddleButton","Extermination grenade remains separate from its flame weapon");
     Check(TeknoDisplaySetup.Configure(aliens,3840,2160) && !TeknoDisplaySetup.Configure(aliens,3840,2160) && File.Exists(alienProfile+".before-deadeye-display-fix"),"Aliens display setup follows the real display resolution, makes one backup and is idempotent");
     Check(XDocument.Load(alienProfile).Descendants("FieldInformation").Single(f=>f.Element("FieldName")?.Value=="ResolutionWidth").Element("FieldValue")?.Value=="3840" && !TeknoDisplaySetup.Configure(repair,3840,2160),"Display corrections use supported Aliens fields and preserve unrelated game profiles");
+    Check(XDocument.Load(alienProfile).Descendants("FieldInformation").Single(f=>f.Element("FieldName")?.Value=="Windowed").Element("FieldValue")?.Value=="0","Absolute Aliens RawInput uses the normalized fullscreen route instead of the DPI-scaled windowed route");
+    var relativeAliens=XDocument.Load(alienProfile);
+    relativeAliens.Root!.Element("ConfigValues")!.Add(new XElement("FieldInformation",new XElement("CategoryName","General"),new XElement("FieldName","Use Relative Input"),new XElement("FieldValue","1")));
+    relativeAliens.Save(alienProfile);TeknoDisplaySetup.Configure(aliens,3840,2160);
+    Check(XDocument.Load(alienProfile).Descendants("FieldInformation").Single(f=>f.Element("FieldName")?.Value=="Windowed").Element("FieldValue")?.Value=="1","Relative Aliens input retains the windowed route and its existing resolution");
     Throws(() => GunSystems.ValidateMap(new() { ["mouse:99"] = "shoot" }), "Binding rejects invalid physical inputs");
     Throws(() => GunSystems.ValidateMap(new() { ["key:49"] = "delete-all" }), "Binding rejects unsupported actions");
     Check(GunSystems.ReaperConfiguration(new(OffscreenReload:false, Aspect:"4:3")).SequenceEqual(new[] {"ZS", "ZM", "ZN", "ZB", "ZX"}), "RS3 configuration applies aspect and reload and exits external mode without firing recoil");
