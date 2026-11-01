@@ -37,8 +37,8 @@ virtual-input observations where an adapter was available.
 | Dead Space: Extraction, Dolphin | Native launch, rendered title, menu/resume and cleanup passed. Two controller subscriptions and independent production DSU streams were observed in an isolated configuration. All 24 required action routes resolved. | Initial input replay occurred during boot. The stricter automatic title recognizer then refused the scene. In-level shooting, secondary actions and two-player gameplay remain unverified. |
 | The House of the Dead: Overkill, Dolphin | Native launch, menu/resume and cleanup passed. Two DSU consumers and all 16 required action routes were observed. | The scene-gated replay stopped during boot/movie recognition. In-level actions remain unverified. |
 | The House of the Dead 4 | Native launch and menu/resume passed. The production setup repaired an existing relative-input setting to absolute aim. | The later virtual replay stopped on an out-of-output capture/client transition and unexpected session end. No full input/gameplay pass is claimed. |
-| The House of the Dead 4 Special | A controlled comparison with the matching installed ElfLdr2 profile and complete `elf`/`fs`/`drv` data passed native launch, menu/resume and cleanup. A virtual Start then left the ride-reset prompt and reached the opening cinematic. | The earlier partial-data replay did not leave the cabinet prompt. In-level weapon effects and independent P2 gameplay remain unverified. |
-| The House of the Dead EX | The earlier flattened ELF copy hung. A comparison retaining sibling `fs` and `drv` data passed native renderer response, menu/resume and cleanup using the same installed loader and executable. | Independent P2 gameplay, all action effects and physical tracking remain unverified. The staged shared libraries already matched their source; they were not replaced. |
+| The House of the Dead 4 Special | Automatic setup with the matching installed ElfLdr2 metadata and complete `elf`/`fs`/`drv` data passed bounded native launch and cleanup. A virtual Start left the ride-reset prompt and reached the opening cinematic. | The earlier partial-data replay did not leave the cabinet prompt. Fullscreen/menu presentation, in-level weapon effects and independent P2 gameplay remain unverified. |
+| The House of the Dead EX | Complete sibling data fixes the flattened-copy hang. The published native-display repair passed visible menu, full resumed image, renderer response and cleanup. Its input replay delivered both players' mapped actions and reached Chapter 1. | Independent P2 gameplay, all action effects and physical tracking remain unverified. The staged shared libraries already matched their source; they were not replaced. |
 | The House of the Dead, Model 2 | Native launch, rendered output, menu/resume and cleanup passed. | Complete button coverage and independent P2 actions have not been measured. |
 | The House of the Dead, Saturn | Native launch, menu/resume and cleanup passed. Follow-up removed false warnings about unused A/B/C and D-pad inputs; the reviewed core consumes Trigger, Reload and Start only. | Core/content overrides and actual gun actions remain unverified. Missing required inputs and shared Start keys are still detected. |
 | The House of the Dead 2, Naomi | Native launch, menu/resume and cleanup passed. | Actual gun actions and independent P2 gameplay. |
@@ -112,33 +112,40 @@ change; existing display behavior and installed multiplayer patches are preserve
 
 ## Published package verification
 
-The [0.3.67 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.67)
-passed [770 Windows core checks and fourteen scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41336559170).
+The [0.3.68 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.68)
+passed [775 Windows core checks and fourteen scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41342976356).
 The installer and optional Input Lab archive were checked against their published
 SHA-256 digests before installation. The installed version matched release commit
-`8b30b84100db8edaf90c58b48842cb96b5603d67`.
+`e07753f1c8141784a564e5d307b582773718c839`.
 
-Both existing Lindbergh entries passed bounded native launch, renderer response,
-foreground, menu/resume and cleanup checks through the automatic setup. The
-prepared data retained `elf`, `fs` and `drv`; the existing Special entry used the
-matching installed ElfLdr2 metadata without changing its library identity.
+The installed package was tested after restoring EX's previous display value
+from its retained backup. The ordinary launch path selected the supported native
+1360 x 768, 60 Hz mode and configured windowed rendering. Full-monitor captures
+show the actual game menu and the resumed game filling the output. The test
+exercised the menu's real Resume command. Native mode selection and restoration
+both returned success. No external test script resized the game window or
+changed its display mode during this package check.
 
-Both virtual-input replays passed independent aim packets, press/release delivery
-and isolation checks. EX Start reached Chapter 1 and its introduction. Special
-left the cabinet ride-reset prompt and reached gameplay advice; later action
-frames still showed a Hold Your Fire scene. These observations do not establish
-weapon effects, successful hits or complete independent two-player gameplay.
+A separate replay using the published Input Lab delivered nine aim positions
+and a monotonic 121-packet sweep for each virtual player. Coin, Start, Trigger
+and Pedal press/release delivery and player isolation passed for both players.
+The active profile audit resolved these required actions. Start reached Chapter
+1; later action frames still showed the introduction. This is input-delivery and
+scene evidence, not a certificate of successful shots, pedal effects or complete
+two-player gameplay.
 
-Follow-up EX comparisons isolated a fixed-viewport presentation issue. Enlarging
-the window at 4K retained a small image after menu activation; a process-only DPI
-comparison did not correct it. Windowed rendering at the supported native
-1360 x 768, 60 Hz mode showed a visible menu and a full image after its actual
-Resume command. The automatic candidate reproduced both images without external
-window resizing or mode changes and restored the previous 4K, 60 Hz desktop.
-The new native-display rule applies only to EX; Special presentation remains
-open and is not covered by this comparison.
+Earlier controlled comparisons established why a simple window resize was
+insufficient: this EX renderer retains a fixed viewport. A process-only DPI
+comparison did not correct it, and a nonactivating menu trial remained invisible.
+Neither rejected approach is shipped. HOTD 4 Special retains its original display
+selection; the EX-specific native-display rule does not apply to it.
 
-The library hash remained unchanged, no virtual test device collections remained,
-and the frontend returned to foreground. Both current and saved desktop display
-modes were 3840 x 2160 at 60 Hz. The physical display and real gun tracking remain
-separate from virtual input delivery and bounded process checks.
+The earlier complete-data checks passed both Lindbergh launch paths with `elf`,
+`fs` and `drv` intact. EX Start reached its first chapter, while Special left the
+cabinet ride-reset prompt and reached gameplay advice. Those checks still do not
+establish in-level weapon effects or independent two-player gameplay for Special.
+
+After both published-package checks, the library hash was unchanged, no virtual
+test device collections remained and the frontend returned to foreground. Both
+current and saved physical desktop modes were 3840 x 2160 at 60 Hz. Physical gun
+tracking, recoil and complete playthroughs remain separate verification tasks.
