@@ -91,6 +91,7 @@ internal static class Program
                 catch(Exception e) { evidence.Add(new {stage="error",error=e.ToString()});Console.Error.WriteLine(e.Message); }
                 finally {File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(new {
                     game.Id,game.Title,time=DateTimeOffset.Now,exit,evidence,gameplayVerified=false,
+                    toolVersion=typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,toolHash=Hash(typeof(Program).Assembly.Location),
                     captureBackend="dxgi-desktop-duplication",verificationLevel=args.Contains("--input-route-probe")?"emulator-input-route":"raw-input-and-scene-captures",
                     verdict="Input delivery and scene captures are recorded separately. Screenshots require game-specific review; this report is not an all-buttons gameplay certificate."
                 },json));dispatcher.BeginInvokeShutdown(DispatcherPriority.Normal);}
@@ -161,6 +162,7 @@ internal static class Program
         string backup=Path.Combine(output,"profile-before.xml");File.Copy(game.SourcePath,backup,false);
         string? preparedHash=null;
         File.WriteAllText(Path.Combine(output,"restore.json"),JsonSerializer.Serialize(new {path=game.SourcePath,backup,beforeHash=Hash(backup),preparedHash},json));
+        evidence.Add(new {stage="emulator-build",sha256=Hash(game.Executable)});
         var session=new GameSession();Task? running=null;
         using var neutralStop=CancellationTokenSource.CreateLinkedTokenSource(cancel.Token);
         // Real tracking guns already emit positions while the game boots. Keep
@@ -214,6 +216,17 @@ internal static class Program
             foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"coin|start",RegexOptions.IgnoreCase)))
                 await Action(session,controllers,players,row);
             await Delay(5000);
+            if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath) is "AliensExtermination" or "JurassicPark")
+            {
+                // Both reviewed titles have a 30-second mission vote. Let it
+                // finish before treating weapon actions as in-level observations.
+                evidence.Add(new {stage="mission-warmup",seconds=35,note="Allow the reviewed mission-selection timer to finish, then dismiss the briefing with each player's mapped trigger."});
+                await Delay(35000);RequireGame(session);
+                foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"trigger",RegexOptions.IgnoreCase)))
+                    await Action(session,controllers,players,row);
+                await Delay(3000);
+                evidence.Add(new {stage="after-mission-warmup",frame=Capture(session,"after-mission-warmup"),note="Scene still requires visual review; elapsed time alone does not certify gameplay."});
+            }
             for(int p=1;p<=2;p++)
             {
                 var pipePoints=new List<PipeSample>();
@@ -263,7 +276,7 @@ internal static class Program
         var a=new HidAttributes{Size=Marshal.SizeOf<HidAttributes>()};
         return HidD_GetAttributes(device,ref a)&&a.Vendor==0xF0DE&&a.Product==0xA000+player;
     }
-    private static bool Administrative(ControlRow row)=>Regex.IsMatch(row.SourceKey??"","^(Test|Service)",RegexOptions.IgnoreCase)||Regex.IsMatch(row.Function,"volume|service|test menu|test mode|exit|quit",RegexOptions.IgnoreCase);
+    private static bool Administrative(ControlRow row)=>Regex.IsMatch(row.SourceKey??"","^(Test|Service)",RegexOptions.IgnoreCase)||Regex.IsMatch(row.Function,@"volume|service|test\s*menu|test\s*mode|exit|quit",RegexOptions.IgnoreCase);
     private static async Task WaitForPlayableScene(GameSession session)
     {
         var started=Stopwatch.StartNew();
@@ -307,8 +320,8 @@ internal static class Program
         if(!match.Success){evidence.Add(new {stage="action",row.Player,row.Function,row.Expression,status="not-replayable"});return;}
         int p=int.Parse(match.Groups[1].Value),code=int.Parse(match.Groups[3].Value);bool mouse=match.Groups[2].Value=="mouse";
         if(!mouse&&code is 27 or 91 or 92 or 0x73 or 0x79 or 0x7b){evidence.Add(new{stage="action",row.Player,row.Function,status="reserved-system-or-exit-key"});return;}
-        string before=Capture(session,$"p{p}-{row.SourceKey}-before");var gameBefore=gameObservation?.Sample();var pipeBefore=pipe?.Sample();AliensSample? gameHeld=null;PipeSample? pipeHeld=null;Drain();
-        try{Send(devices[p-1],mouse,code,true);await Delay(150);gameHeld=gameObservation?.Sample();pipeHeld=pipe?.Sample();}
+        string before=Capture(session,$"p{p}-{row.SourceKey}-before");var gameBefore=gameObservation?.Sample();var pipeBefore=pipe?.Sample();AliensSample? gameHeld=null;PipeSample? pipeHeld=null;string? heldFrame=null;Drain();
+        try{Send(devices[p-1],mouse,code,true);await Delay(150);gameHeld=gameObservation?.Sample();pipeHeld=pipe?.Sample();heldFrame=Capture(session,$"p{p}-{row.SourceKey}-held");}
         finally{Send(devices[p-1],mouse,code,false);}
         await Delay(300);var received=Drain();string id=mouse?players[p-1].MouseId:players[p-1].KeyboardId!;
         bool down=received.Any(r=>r.DeviceId==id&&(mouse?(r.Buttons&(1<<((code-1)*2)))!=0:r.Key==code&&r.Down));
@@ -318,7 +331,7 @@ internal static class Program
         var pipeReleased=pipe?.Sample();uint? expectedMask=pipe is null?null:TeknoPipeObservation.Mask(row.SourceKey);
         bool? routed=pipe is not null&&expectedMask is {} mask?pipeBefore?.Buttons==0&&pipeHeld?.Buttons==mask&&pipeReleased?.Buttons==0:null;
         evidence.Add(new {stage="action",emulatorInputVerified=routed,pipeBefore,pipeHeld,pipeReleased,expectedMask,row.Player,row.Function,row.Expression,rawPressed=down,rawReleased=up,isolated,
-            gameBefore,gameHeld,gameReleased=gameObservation?.Sample(),before,after=Capture(session,$"p{p}-{row.SourceKey}-after"),gameResponse="requires-visual-review"});
+            gameBefore,gameHeld,heldFrame,gameReleased=gameObservation?.Sample(),before,after=Capture(session,$"p{p}-{row.SourceKey}-after"),gameResponse="requires-visual-review"});
         if(routed==false)throw new IOException($"P{p} {row.Function}: emulator input state did not match its press and release.");
         if(!down||!up||!isolated)throw new IOException($"P{p} {row.Function}: incomplete or cross-player RawInput press/release pair.");
     }

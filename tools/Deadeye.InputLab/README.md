@@ -54,6 +54,12 @@ after a recognized menu or game scene appears. A renderer
 that remains on a loading or unknown scene is reported as a failure. Neutral aim
 reports are sent during boot, as they are by connected tracking guns.
 
+Aliens Extermination and Jurassic Park have a reviewed 30-second mission vote.
+The replay waits for that timer and uses each player's mapped trigger to dismiss
+the briefing before its aiming grid and weapon sequence. The resulting scene is
+captured for review. Actions have before, held and released screenshots. The
+mission warmup is skipped by the explicit input-route-only probe.
+
 Each player also receives a 121-point horizontal sweep. Reported delivery timing
 is measured between virtual HID submission and this tool's RawInput receiver.
 It does not measure camera tracking or rendered frame latency.
