@@ -319,6 +319,15 @@ internal static partial class Program
                     await Action(session,controllers,players,row);
                 await Delay(3000);
                 evidence.Add(new {stage="after-mission-warmup",frame=Capture(session,"after-mission-warmup"),note="Scene still requires visual review; elapsed time alone does not certify gameplay."});
+                if(Path.GetFileNameWithoutExtension(game.SourcePath)=="Terminator")
+                {
+                    // The reviewed intro explicitly says HIT RELOAD TO SKIP.
+                    // Its small dark caption is not reliably recognized by OCR.
+                    evidence.Add(new {stage="terminator-intro-skip",note="Use the mapped P1 Reload for the reviewed cinematic; this is navigation, not weapon-effect verification."});
+                    await Action(session,controllers,players,actions.First(r=>r.SourceKey=="P1Button3"));
+                    await Delay(15000);RequireGame(session);
+                    evidence.Add(new {stage="terminator-after-intro",frame=Capture(session,"terminator-after-intro"),note="Post-briefing scene still requires visual review."});
+                }
             }
             for(int p=1;p<=2;p++)
             {

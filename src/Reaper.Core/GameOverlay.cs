@@ -117,6 +117,7 @@ public static class OverlayControls
                     var pair = line.Split('=', 2); if (pair.Length == 2 && !pair[0].TrimStart().StartsWith('#')) values[pair[0].Trim()] = pair[1].Trim().Trim('"');
                 }
                 var rows = new List<ControlRow>();
+                string[] coreActions=RetroArchSetup.LightgunActions(game);
                 foreach (var pair in values)
                 {
                     var match = Regex.Match(pair.Key, @"^input_player([1-4])_(gun_trigger|gun_reload|gun_aux_a|gun_aux_b|gun_aux_c|gun_start|gun_select|gun_offscreen_shot|gun_dpad_up|gun_dpad_down|gun_dpad_left|gun_dpad_right|a|b|start|select)(?:_(mbtn|btn|axis))?$");
@@ -126,10 +127,21 @@ public static class OverlayControls
                     // Controller/axis numbers have no confirmed physical gun identity.
                     int port = int.Parse(match.Groups[1].Value);
                     if(values.GetValueOrDefault("input_libretro_device_p"+port)=="0") continue;
+                    if(coreActions.Length>0 && values.GetValueOrDefault("input_libretro_device_p"+port) is "260" or "516"
+                        && !coreActions.Contains(match.Groups[2].Value)) continue;
                     int player = int.TryParse(values.GetValueOrDefault("deadeye_player" + port + "_physical"), out int physical) ? physical : port;
                     if(player is not (1 or 2)) continue;
                     string? token = match.Groups[3].Value switch { "" => StartupControls.KeyToken(pair.Value), "mbtn" when Regex.IsMatch(pair.Value, "^[1-5]$") => "mouse:" + pair.Value, _ => null };
                     rows.Add(new(player, label, pair.Value == "nul" || pair.Value == "-1" ? I18n.T("Nicht belegt") : input + pair.Value, "RetroArch-Konfiguration",token is null ? null : "P" + player + "|" + token,SourceKey:match.Groups[2].Value));
+                }
+                // Deleting a whole required entry must not hide it from the audit.
+                for(int port=1;coreActions.Length>0 && port<=4;port++)
+                {
+                    if(values.GetValueOrDefault("input_libretro_device_p"+port) is not ("260" or "516"))continue;
+                    int player=int.TryParse(values.GetValueOrDefault("deadeye_player"+port+"_physical"),out int physical)?physical:port;
+                    if(player is not (1 or 2))continue;
+                    foreach(string action in coreActions.Where(a=>!rows.Any(r=>r.Player==player && r.SourceKey==a)))
+                        rows.Add(new(player,action switch {"gun_trigger"=>I18n.T("Abzug"),"gun_reload"=>I18n.T("Nachladen"),_=>"Start"},I18n.T("Nicht belegt"),"RetroArch-Konfiguration",SourceKey:action));
                 }
                 var compact=rows.GroupBy(r=>(r.Player,r.Function,r.SourceKey)).Select(group=> {
                     var assigned=group.Where(r=>r.Input!=I18n.T("Nicht belegt")).Select(r=>r.Input).Distinct().ToArray();

@@ -39,6 +39,7 @@ public static class GameControlAudit
         var tekno=TeknoRequirements.Read(game);
         if(tekno is not null && guns.Any(b=>tekno.Rows.Any(r=>r.Player==b.Player && r.IsAim)))guns=guns.Where(b=>tekno.Rows.Any(r=>r.Player==b.Player && r.IsAim)).ToArray();
         var controls = OverlayControls.Read(game,data,guns,devices);
+        var retroRequired=RetroArchSetup.LightgunActions(game);
         bool dolphin = DolphinSetup.IsDolphin(game);
         string? id = dolphin ? DolphinSetup.DiscId(game) : null;
         string[] required = id is null ? [] : RequiredDolphin(id);
@@ -98,10 +99,10 @@ public static class GameControlAudit
                         {missing=true;issues.Add(I18n.T("Zieleingang gehört nicht zur physischen Gun dieses Spielers: ")+aim.Function);}
                 foreach(var row in rows.Where(r=>!r.IsAim && r.Function is not null && !r.Function.Contains("Light Gun",StringComparison.OrdinalIgnoreCase)))
                     if(row.Input==I18n.T("Nicht belegt") || row.Input.StartsWith(I18n.T("Nicht belegt /")))
-                    {issues.Add(I18n.T("Aktion nicht belegt: ")+row.Function);if(game.Source=="teknoparrot"||mame is not null)missing=true;else review=true;}
+                    {issues.Add(I18n.T("Aktion nicht belegt: ")+row.Function);if(game.Source=="teknoparrot"||mame is not null||retroRequired.Contains(row.SourceKey))missing=true;else review=true;}
                 foreach(var row in rows.Where(row=>!row.IsAim && !row.Function.Contains("Light Gun",StringComparison.OrdinalIgnoreCase) && !row.Function.Contains("Service",StringComparison.OrdinalIgnoreCase) && !StartupControls.Resolve(row,gun).Resolved))
                 {
-                    if(tekno is not null || mame is not null)missing=true;else review=true;
+                    if(tekno is not null || mame is not null || retroRequired.Contains(row.SourceKey))missing=true;else review=true;
                     issues.Add(I18n.T("Aktion nicht an der Gun erreichbar: ")+row.Function);
                 }
                 if(review && issues.Count==0) issues.Add(I18n.T("Einige Spielaktionen sind keiner physischen Gun-Taste bestätigt zugeordnet."));

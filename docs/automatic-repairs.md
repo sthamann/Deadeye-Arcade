@@ -88,3 +88,12 @@ entries, actual changed-file hashes and ambiguous OpenAL architectures. Optional
 checks exercise both exact official archives on fresh temporary installations.
 The browser checks cover the native repair command, findings/history, both
 languages and the distinction between remote and physical display modes.
+
+## Beetle Saturn gun actions
+
+For the reviewed Stunner/Virtua Gun ports, the legend and audit use the
+[core's actual Trigger, Reload and Start inputs](https://docs.libretro.com/library/beetle_saturn/#lightgun).
+Unused generic A/B/C or D-pad bindings no longer create false missing-action or
+shared-key warnings. A missing Reload entry and a genuinely shared Start key
+still require action. Core/content overrides and physical game response remain
+separate checks.

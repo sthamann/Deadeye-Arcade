@@ -581,6 +581,17 @@ RButton::y
     Check(!GameControlAudit.Read(collidingRa,root,[p1,p2]).Players.SelectMany(p=>p.Issues).Any(i=>i.Contains("RetroArch")),"Distinct RS3 keyboard codes remain independently assigned in RetroArch");
     RetroArchSetup.Configure(collidingRa,root,[sharedGuns[0]],sharedGuns.Select(b=>b.MouseId).ToArray());
     Check(!GameControlAudit.Read(collidingRa,root,[sharedGuns[0]]).Players.SelectMany(p=>p.Issues).Any(i=>i.Contains("RetroArch")),"A single active RetroArch gun has no cross-player keyboard collision");
+    var saturnRa=raGame with {Id="saturn-reviewed",Arguments=["-L","cores/mednafen_saturn_libretro.dll","disc.chd"]};
+    RetroArchSetup.Configure(saturnRa,root,sharedGuns,sharedGuns.Select(b=>b.MouseId).ToArray());
+    var saturnRows=OverlayControls.Read(saturnRa,root,sharedGuns);
+    Check(saturnRows.Rows.Length==6 && saturnRows.Rows.All(r=>r.SourceKey is "gun_trigger" or "gun_reload" or "gun_start"),"Saturn gun legends contain only the three inputs consumed by the reviewed core for each player");
+    Check(GameControlAudit.Read(saturnRa,root,sharedGuns).Players.All(p=>p.Status=="needs-action" && p.Issues.Any(i=>i.Contains("RetroArch"))),"Saturn still rejects a real shared Start key even though unused D-pad keys are ignored");
+    RetroArchSetup.Configure(saturnRa,root,[p1,p2],[p1.MouseId,p2.MouseId]);
+    File.AppendAllText(RetroArchSetup.ProfilePath(saturnRa,root),"input_player1_gun_dpad_up = \"up\"\ninput_player2_gun_dpad_up = \"up\"\n");
+    Check(GameControlAudit.Read(saturnRa,root,[p1,p2]).Players.All(p=>p.Status=="needs-review" && !p.Issues.Any(i=>i.Contains("RetroArch")||i.Contains("Nicht belegt"))),"Saturn does not invent missing unused actions or certify unreviewed override files");
+    string saturnProfile=RetroArchSetup.ProfilePath(saturnRa,root);
+    File.WriteAllLines(saturnProfile,File.ReadAllLines(saturnProfile).Where(l=>!l.StartsWith("input_player1_gun_reload")));
+    Check(GameControlAudit.Read(saturnRa,root,[p1,p2]).Players.Single(p=>p.Player==1).Status=="needs-action","Removing every Saturn reload entry remains a required-action failure");
     var fixedEstate=raGame with {Title="Blue Estate",WorkingDirectory=raRoot};File.WriteAllText(Path.Combine(raRoot,"BlueEstate_Fix.dll"),"installed fixture");
     Check(GameGunProfiles.Vyper(fixedEstate,vyper).PedalMode=="right" && GameGunProfiles.Vyper(raGame,vyper).PedalMode=="assignable" && vyper.Blamcon!.PedalMode=="assignable","Fixed-mouse Blue Estate temporarily routes Vyper magazine to right mouse while preserving the saved menu configuration");
     Check(StartupControls.Hardware(GameGunProfiles.ForGame(fixedEstate,vyper)).Single(h=>h.Id=="magazine").Token=="mouse:2" && StartupControls.Hardware(vyper).Single(h=>h.Id=="magazine").Token=="key:82","Fixed-mouse game legends reflect the temporary magazine route without changing stored physical controls");

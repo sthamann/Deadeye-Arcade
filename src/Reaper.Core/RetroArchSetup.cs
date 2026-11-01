@@ -7,6 +7,13 @@ public static class RetroArchSetup
     public static bool IsRetroArch(GameEntry game) => Path.GetFileName(game.Executable).Contains("retroarch", StringComparison.OrdinalIgnoreCase);
     public static string ProfilePath(GameEntry game, string data) => Path.Combine(data, "input-profiles", Regex.Replace(game.Id, "[^a-zA-Z0-9_-]", "_") + ".cfg");
 
+    // Beetle Saturn's Stunner/Virtua Gun consumer reads only these buttons.
+    // Other cores retain their existing, unreviewed action lists.
+    public static string[] LightgunActions(GameEntry game) => IsRetroArch(game)
+        && game.Arguments.Where((a,i)=>i>0 && game.Arguments[i-1]=="-L")
+            .Any(a=>Path.GetFileName(a.Replace('\\','/')).Equals("mednafen_saturn_libretro.dll",StringComparison.OrdinalIgnoreCase))
+        ? ["gun_trigger","gun_reload","gun_start"] : [];
+
     // WinRaw in the installed 1.14/1.19 builds uses the original OS enumeration,
     // zero based, including the RDP mouse and unnamed devices.
     public static GameEntry Configure(GameEntry game, string data, IEnumerable<GunBinding> bindings, IReadOnlyList<string> mouseOrder)
