@@ -204,6 +204,25 @@ menu, resumes the game and checks renderer focus and cleanup. Each owned session
 also saves `last-session-<game-id>.json` locally, including observed runtime exit
 codes and whether a stop was requested.
 
+### Optional live input replay
+
+[Deadeye Input Lab](tools/Deadeye.InputLab/README.md) is a separate diagnostic tool
+for replaying two independent absolute HID guns and their keyboard buttons through
+the real game launch path. It checks axis endpoints, continuous movement, press and
+release events and player isolation, and saves game screenshots beside the results.
+
+The first adapter covers supported direct TeknoParrot absolute RawInput profiles
+without external helpers.
+A scene check rejects a renderer that remains on an unrecognized loading screen.
+Game response still requires a reviewed observation of the relevant action;
+receiving an input packet alone does not establish working gameplay. This tool
+also cannot measure a physical gun camera, lens, calibration or recoil.
+
+Input Lab requires an explicitly installed test driver and local signing
+certificate. These are **not installed by the frontend or ordinary game setup**.
+Its changes to the selected profile are backed up and restored, and the library
+remains read only. Use it on a test PC with other applications closed.
+
 ## Updates and your data
 
 Deadeye checks stable GitHub releases at startup and every six hours. Use

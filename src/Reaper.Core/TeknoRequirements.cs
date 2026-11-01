@@ -19,8 +19,9 @@ public record TeknoRequirements(string Template, ControlRow[] Rows)
         string? api=current.Descendants().Where(e=>e.Name.LocalName=="FieldInformation").FirstOrDefault(e=>Value(e,"FieldName")=="Input API") is {} field?Value(field,"FieldValue"):null;
         if(api is not ("RawInput" or "DirectInput" or "XInput"))return null;
         var rows=original.Descendants().Where(e=>e.Name.LocalName=="JoystickButtons" && e.Elements().Any(c=>c.Name.LocalName=="ButtonName"))
-            .Where(e=>Value(e,"HideWith"+api)!="true" && GameControlAudit.GameplayAction(Value(e,"ButtonName")))
-            .Select(e=>new ControlRow(OverlayControls.TeknoPlayer(Value(e,"InputMapping"),Value(e,"ButtonName")),Value(e,"ButtonName"),"","TeknoParrot vendor template",IsAim:OverlayControls.TeknoAim(e),SourceKey:Value(e,"InputMapping"))).ToArray();
+            .Where(e=>Value(e,"HideWith"+api)!="true")
+            .Select(e=>new ControlRow(OverlayControls.TeknoPlayer(Value(e,"InputMapping"),Value(e,"ButtonName")),Value(e,"ButtonName"),"","TeknoParrot vendor template",IsAim:OverlayControls.TeknoAim(e),SourceKey:Value(e,"InputMapping")))
+            .Where(row=>GameControlAudit.GameplayAction(row,game)).ToArray();
         return rows.Any(r=>r.IsAim && r.Player is 1 or 2)?new(template,rows):null;
     }
     public ControlRow? Match(ControlRow required, IEnumerable<ControlRow> actual)

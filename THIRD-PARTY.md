@@ -44,3 +44,24 @@ application license does not grant rights to games, ROMs or artwork.
   Its archive and DLL hashes are pinned. The app keeps the upstream 0BSD license
   in the game folder; a copy is included in `licenses/ddrawcompat-0BSD.txt`.
   The implementation DLL is not bundled with Deadeye.
+
+## Optional input diagnostics
+
+The separately built [Deadeye Input Lab](tools/Deadeye.InputLab/README.md) uses
+[HIDMaestro 2.1.0](https://github.com/hifihedgehog/HIDMaestro/releases/tag/v2.1.0)
+under its MIT license. Its upstream license and third party notices are included
+in that tool's portable package. This includes the upstream notices for its
+Windows SDK and WinRT dependencies. HIDMaestro is not a dependency of the normal
+frontend and its driver is not installed by Deadeye Setup.
+
+The optional Aliens observer uses published build identifiers and memory address
+facts from [DemulShooter](https://github.com/argonlefou/DemulShooter/blob/master/DemulShooter/Games/Game_GvrAliens.cs).
+It reads matching game state only and declines unknown executables. It does not
+redistribute or patch game binaries.
+
+Input Lab's GPU screenshots use the MIT-licensed Vortice.Direct3D11 3.8.3,
+Vortice.DXGI, Vortice.DirectX, Vortice.Mathematics and SharpGen runtime bindings.
+Their upstream MIT notices are retained in the tool's `licenses` directory.
+Sources: [Vortice.Windows](https://github.com/amerkoleci/Vortice.Windows),
+[Vortice.Mathematics](https://github.com/amerkoleci/Vortice.Mathematics),
+[SharpGenTools](https://github.com/SharpGenTools/SharpGenTools).

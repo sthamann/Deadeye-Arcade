@@ -32,6 +32,7 @@ public sealed class GameSession
     public List<string> CleanupIssues { get; } = [];
     public event Action<string>? Changed;
     public event Action<nint>? GameWindowReady;
+    public event Action? ProfilePrepared;
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct ProcessEntry
     { public uint Size, Usage, Pid; public nint Heap; public uint Module, Threads, Parent; public int Priority; public uint Flags; [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 260)] public string Name; }
@@ -242,6 +243,7 @@ public sealed class GameSession
         TeknoGunSetup.Configure(game,bindings);
         GamePresentation.Prepare(game);
         KnownFixes.RecordChanges(game, dataDirectory, "game-profile", beforeProfile, profileFiles);
+        ProfilePrepared?.Invoke();
         var info = LaunchRules.Prepare(game);
         if(SupermodelSetup.IsSupermodel(game) && bindings.Any()) info.ArgumentList.Add("-input-system=rawinput");
         if (game.Source == "teknoparrot")

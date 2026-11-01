@@ -1,0 +1,385 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using System.Security.Principal;
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Windows.Interop;
+using System.Windows.Threading;
+using System.Xml.Linq;
+using Microsoft.Win32.SafeHandles;
+using HIDMaestro;
+using Reaper.Core;
+using Reaper.Windows;
+
+namespace Deadeye.InputLab;
+
+// An opt-in diagnostic consumer of the real launch path. It never saves LibraryState.
+internal static class Program
+{
+    private static readonly ConcurrentQueue<RawPacket> packets = new();
+    private static readonly ConcurrentQueue<(RawPacket Packet,long Time)> timed = new();
+    private static readonly List<object> evidence = [];
+    private static readonly CancellationTokenSource cancel = new();
+    private static readonly JsonSerializerOptions json = new(JsonDefaults.Options);
+    private static RawInput raw = null!;
+    private static Dispatcher receiver = null!;
+    private static string output = "";
+    private static int exit = 1;
+    private static AliensObservation? gameObservation;
+    private static TeknoPipeObservation? pipe;
+
+    [STAThread]
+    private static int Main(string[] args)
+    {
+        try
+        {
+            if(args is ["--self-check"])
+            {
+                if(!SceneSignals("FREEPLRY").Ready||!SceneSignals("PRESS STRRT TO BEGIN").Ready
+                    ||SceneSignals("").Ready||SceneSignals("Loading audio systems 30% FREEPLAY").Ready
+                    ||SceneSignals("NO GVRIO CARD FOUND").Ready)throw new IOException("Scene signal regression failed.");
+                Console.WriteLine("Scene signal checks passed (five recorded and negative cases).");return 0;
+            }
+            if(args.Length < 2 || args[0] is not ("plan" or "run"))
+                throw new ArgumentException("Usage: Deadeye.InputLab plan|run GAME_ID [--data DIR] [--output DIR] [--install-driver] [--input-route-probe] [--windowed-probe]");
+            string data = Option(args,"--data") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ReaperArcade");
+            output = Path.GetFullPath(Option(args,"--output") ?? Path.Combine(data,"input-lab",DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")));
+            var library = new LibraryStore(data).Load();
+            var game = library.Games.Single(g=>g.Id==args[1]);
+            if(args[0]=="plan")
+            {
+                Console.WriteLine(JsonSerializer.Serialize(new { game.Id,game.Title,
+                    backend=game.Source=="teknoparrot"?"virtual-absolute-hid":"not-yet-supported",
+                    controls=OverlayControls.Read(game,data,library.Bindings),
+                    note="A plan reads configuration only. It does not install a driver or verify gameplay." },json));
+                return 0;
+            }
+            if(game.Source!="teknoparrot" || (game.Helpers??[]).Length!=0)
+                throw new NotSupportedException("This pilot runs direct TeknoParrot profiles only. Helper and other emulator adapters need a reviewed restore recipe.");
+            var selectedProfile=XDocument.Load(game.SourcePath);
+            string? Setting(string name)=>selectedProfile.Descendants("FieldInformation").FirstOrDefault(f=>f.Element("CategoryName")?.Value=="General"&&f.Element("FieldName")?.Value==name)?.Element("FieldValue")?.Value;
+            if(Setting("Input API")!="RawInput"||Setting("Use Relative Input")=="1")
+                throw new NotSupportedException("This adapter requires an absolute RawInput profile. Other input APIs need their own replay adapter.");
+            if(selectedProfile.Root?.Element("EmulationProfile")?.Value is "PrimevalHunt" or "Hotd4ex")
+                throw new NotSupportedException("This profile can prepare shared loader libraries and requires an extended restoration recipe before replay.");
+            if(library.Bindings.Count(b=>b.Player is 1 or 2)!=2)
+                throw new InvalidOperationException("Assign two real gun profiles first; the lab reuses their actual learned buttons without changing the library.");
+            using var mutex = new Mutex(true,"Local\\ReaperArcade-v1",out bool first);
+            if(!first) throw new InvalidOperationException("Close Deadeye Arcade before running the input lab.");
+            Directory.CreateDirectory(output);
+            var dispatcher=Dispatcher.CurrentDispatcher;receiver=dispatcher;
+            using var window=new HwndSource(new HwndSourceParameters("Deadeye Input Lab receiver") { ParentWindow=(nint)(-3),Width=1,Height=1 });
+            using var input=new RawInput();raw=input;
+            window.AddHook((nint h,int m,nint w,nint l,ref bool handled)=> {raw.Message(m,l);return 0;});
+            raw.Register(window.Handle);
+            raw.Packet+=p=>
+            {
+                packets.Enqueue(p);timed.Enqueue((p,Stopwatch.GetTimestamp()));
+                while(packets.Count>4096)packets.TryDequeue(out _);
+                while(timed.Count>4096)timed.TryDequeue(out _);
+            };
+            Console.CancelKeyPress+=(_,e)=>{e.Cancel=true;cancel.Cancel();};
+            _=Task.Run(async()=>
+            {
+                try { await Run(game,data,library.Bindings,args.Contains("--install-driver"),args.Contains("--windowed-probe"),args.Contains("--input-route-probe"));exit=0; }
+                catch(Exception e) { evidence.Add(new {stage="error",error=e.ToString()});Console.Error.WriteLine(e.Message); }
+                finally {File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(new {
+                    game.Id,game.Title,time=DateTimeOffset.Now,exit,evidence,gameplayVerified=false,
+                    captureBackend="dxgi-desktop-duplication",verificationLevel=args.Contains("--input-route-probe")?"emulator-input-route":"raw-input-and-scene-captures",
+                    verdict="Input delivery and scene captures are recorded separately. Screenshots require game-specific review; this report is not an all-buttons gameplay certificate."
+                },json));dispatcher.BeginInvokeShutdown(DispatcherPriority.Normal);}
+            });
+            Dispatcher.Run();return exit;
+        }
+        catch(Exception e) {Console.Error.WriteLine(e.Message);return 2;}
+    }
+
+    private static string? Option(string[] a,string key) {int i=Array.IndexOf(a,key);return i>=0&&i+1<a.Length?a[i+1]:null;}
+    private static string Hash(string path)=>Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
+    private static async Task Delay(int ms)
+    {
+        for(int i=0;i<ms;i+=25) {cancel.Token.ThrowIfCancellationRequested();if((GetAsyncKeyState(0x7b)&0x8000)!=0)throw new OperationCanceledException("F12 stopped the input lab.");await Task.Delay(Math.Min(25,ms-i),cancel.Token);}
+    }
+
+    private static async Task Run(GameEntry game,string data,List<GunBinding> saved,bool allowInstall,bool windowedProbe,bool routeProbe)
+    {
+        if(!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))
+            throw new InvalidOperationException("Virtual device creation requires an elevated console. Plan mode needs no elevation.");
+        if(Hash(typeof(HMContext).Assembly.Location)!="F13E32591404DB0F418AF9265B8E240F71257297CFAE5A41DCD696FD87E9B4D5")
+            throw new IOException("The HIDMaestro assembly differs from the reviewed 2.1.0 payload.");
+        // The SDK can otherwise deploy a newer payload from CreateController.
+        // Refuse that implicit deployment when installation was not requested.
+        var fastPath=typeof(HMContext).Assembly.GetType("HIDMaestro.Internal.DriverBuilder")?
+            .GetMethod("WillTakeFastPath",BindingFlags.Static|BindingFlags.NonPublic);
+        if(!allowInstall&&fastPath?.Invoke(null,null) is not true)
+            throw new InvalidOperationException("The reviewed driver payload is absent or needs deployment. Obtain explicit approval before using --install-driver.");
+        // HMContext may stage its payload. Driver deployment, signing and certificate
+        // trust require the explicit installation flag; ordinary runs refuse it.
+        using var context=new HMContext();
+        Console.WriteLine("Checking the reviewed virtual HID driver");
+        if(!context.IsDriverInstalled)
+        {
+            if(!allowInstall)throw new InvalidOperationException("HIDMaestro is not installed. Its installation adds a local signing certificate to LocalMachine My, Root and TrustedPublisher. Obtain explicit approval before using --install-driver.");
+            context.InstallDriver();
+        }
+        using var p1=context.CreateController(Profile(1),"deadeye-input-lab-p1");
+        using var p2=context.CreateController(Profile(2),"deadeye-input-lab-p2");
+        var controllers=new[]{p1,p2};
+        evidence.Add(new {stage="driver",context.IsDriverInstalled,remote=GetSystemMetrics(0x1000)!=0});
+        var players=new List<GunBinding>();
+        var until=Stopwatch.StartNew();
+        while(players.Count<2 && until.Elapsed<TimeSpan.FromSeconds(15))
+        {
+            receiver.Invoke(raw.Refresh);players.Clear();
+            var enumerated=raw.Devices.ToArray();
+            for(int p=1;p<=2;p++)
+            {
+                string marker=$"VID_F0DE&PID_A00{p}";
+                bool Matches(InputDevice d)=>d.Id.Contains(marker,StringComparison.OrdinalIgnoreCase)||HasTestIdentity(d.Id,p);
+                var mouse=enumerated.SingleOrDefault(d=>d.Kind=="mouse"&&Matches(d));
+                var keyboard=enumerated.SingleOrDefault(d=>d.Kind=="keyboard"&&Matches(d));
+                if(mouse is null||keyboard is null)continue;
+                players.Add(saved.Single(b=>b.Player==p) with {MouseId=mouse.Id,KeyboardId=keyboard.Id,SerialPort=null,PhysicalId=null,HardwarePlayer=p});
+            }
+            if(players.Count<2)await Delay(100);
+        }
+        if(players.Count!=2)
+        {
+            evidence.Add(new {stage="enumeration-failed",devices=raw.Devices.Select(d=>new {d.Id,d.Name,d.Kind,p1=HasTestIdentity(d.Id,1),p2=HasTestIdentity(d.Id,2)})});
+            throw new IOException("Two distinct virtual mouse and keyboard pairs did not enumerate. No game profile was modified.");
+        }
+        evidence.Add(new {stage="devices",players=players.Select(b=>new {b.Player,b.MouseId,b.KeyboardId,b.SystemId})});
+        Console.WriteLine("Two independent mouse and keyboard pairs are ready");
+        cancel.CancelAfter(TimeSpan.FromMinutes(5));
+        string libraryFile=Path.Combine(data,"library.json"),libraryHash=Hash(libraryFile);
+        string backup=Path.Combine(output,"profile-before.xml");File.Copy(game.SourcePath,backup,false);
+        string? preparedHash=null;
+        File.WriteAllText(Path.Combine(output,"restore.json"),JsonSerializer.Serialize(new {path=game.SourcePath,backup,beforeHash=Hash(backup),preparedHash},json));
+        var session=new GameSession();Task? running=null;
+        using var neutralStop=CancellationTokenSource.CreateLinkedTokenSource(cancel.Token);
+        // Real tracking guns already emit positions while the game boots. Keep
+        // the virtual devices alive too, without any held buttons or keys.
+        var neutral=Task.Run(async()=>
+        {
+            try
+            {
+                while(!neutralStop.IsCancellationRequested)
+                {
+                    foreach(var c in controllers)c.SubmitMouse(new HMMouseState{X=16384,Y=16384});
+                    await Task.Delay(16,neutralStop.Token);
+                }
+            }
+            catch(OperationCanceledException) when(neutralStop.IsCancellationRequested) { }
+        });
+        try
+        {
+            var ready=new TaskCompletionSource<nint>(TaskCreationOptions.RunContinuationsAsynchronously);
+            session.GameWindowReady+=h=>ready.TrySetResult(h);
+            session.ProfilePrepared+=()=>
+            {
+                if(windowedProbe)
+                {
+                    if(!Path.GetFileNameWithoutExtension(game.SourcePath).Equals("AliensExtermination",StringComparison.OrdinalIgnoreCase))
+                        throw new NotSupportedException("The windowed comparison is restricted to Aliens Extermination.");
+                    var profile=XDocument.Load(game.SourcePath);
+                    var value=profile.Descendants("FieldInformation").First(f=>f.Element("CategoryName")?.Value=="General"&&f.Element("FieldName")?.Value=="Windowed").Element("FieldValue")!;
+                    value.Value="1";profile.Save(game.SourcePath);
+                    evidence.Add(new {stage="diagnostic-override",field="General/Windowed",value="1",note="Temporary comparison; restored after the session."});
+                }
+                preparedHash=Hash(game.SourcePath);
+                File.WriteAllText(Path.Combine(output,"restore.json"),JsonSerializer.Serialize(new {path=game.SourcePath,backup,beforeHash=Hash(backup),preparedHash},json));
+            };
+            running=session.Run(game,data,players,cancel.Token,fixesPrepared:true);
+            var winner=await Task.WhenAny(ready.Task,running,Task.Delay(60000,cancel.Token));
+            if(winner!=ready.Task) {if(running.IsCompleted)await running;throw new IOException("No usable renderer appeared within sixty seconds.");}
+            var controls=OverlayControls.Read(game,data,players,raw.Devices);
+            gameObservation=AliensObservation.Attach(session,game);pipe=TeknoPipeObservation.Attach(game);
+            evidence.Add(new {stage="emulator-input-observer",available=pipe is not null,routeProbe,note="Read-only emulator input exchange; not a gameplay measurement."});
+            if(routeProbe&&pipe is null)throw new NotSupportedException("Input route probe requires the exact reviewed Aliens emulator build.");
+            evidence.Add(new {stage="game-observer",available=gameObservation is not null,build=AliensObservation.LastBuildFingerprint,note="Read-only input, player and ammo values for exact known Aliens builds; other builds remain unverified."});
+            File.WriteAllText(Path.Combine(output,"launched-controls.json"),JsonSerializer.Serialize(controls,json));
+            var actions=controls.Rows.Where(r=>r.Player is 1 or 2&&!r.IsAim&&!Administrative(r)).ToArray();
+            evidence.Add(new {stage="control-audit",audit=GameControlAudit.Read(game,data,players),actions=actions.Select(r=>new {r.Player,r.Function,r.Expression})});
+            await Delay(2000);RequireGame(session);
+            if(!routeProbe)await WaitForPlayableScene(session);
+            else evidence.Add(new {stage="scene-not-verified",note="Explicit input-route-only test. Gameplay remains unverified."});
+            neutralStop.Cancel();await neutral;
+            // Credits and Start first. They are read from the launched profile.
+            foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"coin|start",RegexOptions.IgnoreCase)))
+                await Action(session,controllers,players,row);
+            await Delay(5000);
+            for(int p=1;p<=2;p++)
+            {
+                var pipePoints=new List<PipeSample>();
+                foreach(var point in new[]{(0,0),(16384,0),(32767,0),(32767,16384),(32767,32767),(16384,32767),(0,32767),(0,16384),(16384,16384)})
+                {
+                    RequireGame(session);Drain();controllers[p-1].SubmitMouse(new HMMouseState {X=point.Item1,Y=point.Item2});await Delay(250);
+                    var observed=Drain();int x=(int)Math.Round(point.Item1*65535d/32767),y=(int)Math.Round(point.Item2*65535d/32767);
+                    bool received=observed.Any(r=>r.DeviceId==players[p-1].MouseId&&r.Absolute&&Math.Abs(r.X-x)<=128&&Math.Abs(r.Y-y)<=128);
+                    var pipeSample=pipe?.Sample();if(pipeSample is not null)pipePoints.Add(pipeSample);
+                    evidence.Add(new {stage="aim",emulatorInput=pipeSample,player=p,expectedX=x,expectedY=y,rawInputVerified=received,gameState=gameObservation?.Sample(),frame=Capture(session,$"p{p}-aim-{point.Item1}-{point.Item2}"),gameResponse="requires-visual-review"});
+                    if(!received)throw new IOException($"P{p} absolute aim did not reach the RawInput consumer correctly.");
+                }
+                if(pipe is not null)
+                {
+                    var xs=pipePoints.Select(s=>p==1?s.P1X:s.P2X).ToArray();var ys=pipePoints.Select(s=>p==1?s.P1Y:s.P2Y).ToArray();
+                    bool span=xs.Min()<=pipe.MinX+1&&xs.Max()>=pipe.MaxX-1&&ys.Min()<=pipe.MinY+1&&ys.Max()>=pipe.MaxY-1;
+                    evidence.Add(new {stage="emulator-aim-span",player=p,minX=xs.Min(),maxX=xs.Max(),minY=ys.Min(),maxY=ys.Max(),expected=new {pipe.MinX,pipe.MaxX,pipe.MinY,pipe.MaxY},verified=span});
+                    if(!span)throw new IOException($"P{p} emulator aiming range is truncated.");
+                }
+                await Sweep(session,controllers[p-1],players[p-1]);
+            }
+            foreach(var row in actions.Where(r=>!Regex.IsMatch(r.Function,"coin|start",RegexOptions.IgnoreCase)))await Action(session,controllers,players,row);
+        }
+        finally
+        {
+            neutralStop.Cancel();
+            try{await neutral;}catch(Exception e){evidence.Add(new {stage="neutral-stream-end",error=e.Message});}
+            foreach(var c in controllers) {try{c.SubmitKeyboard(HMKeyModifiers.None,ReadOnlySpan<HMKey>.Empty);c.SubmitMouse(new HMMouseState{X=16384,Y=16384});}catch{}}
+            try{await session.End();}catch(Exception e){evidence.Add(new {stage="session-stop",error=e.Message});}
+            if(running is not null)try{await running.WaitAsync(TimeSpan.FromSeconds(15));}catch(Exception e){evidence.Add(new {stage="session-end",error=e.Message});}
+            gameObservation?.Dispose();gameObservation=null;pipe?.Dispose();pipe=null;
+            bool restoreSafe=preparedHash is not null&&File.Exists(game.SourcePath)&&Hash(game.SourcePath)==preparedHash;
+            if(preparedHash is null&&File.Exists(game.SourcePath)&&Hash(game.SourcePath)==Hash(backup))restoreSafe=true;
+            if(restoreSafe){string tmp=game.SourcePath+".input-lab-restore";File.Copy(backup,tmp,true);File.Move(tmp,game.SourcePath,true);}
+            evidence.Add(new {stage="restore",restored=restoreSafe,profileUnchanged=Hash(game.SourcePath)==Hash(backup),libraryUnchanged=Hash(libraryFile)==libraryHash,session.CleanupIssues});
+            if(Hash(game.SourcePath)!=Hash(backup))throw new IOException("Profile restoration needs review. The original and restore manifest are saved in the output directory.");
+            if(Hash(libraryFile)!=libraryHash)throw new IOException("The library changed during the test; its newer contents were retained.");
+        }
+    }
+
+    private static HMProfile Profile(int player)=>new HMProfileBuilder().Id($"deadeye-lab-p{player}").Name($"Deadeye Input Lab P{player}")
+        .Vid(0xF0DE).Pid((ushort)(0xA000+player)).ProductString($"Deadeye Input Lab P{player}").ManufacturerString("Deadeye Arcade test device")
+        .Type("mouse").Connection("USB").FromDescriptorBuilder(new HidDescriptorBuilder().Mouse(absolute:true,wheel:false,pan:false,reportId:1).Keyboard(reportId:2)).Build();
+    private static bool HasTestIdentity(string path,int player)
+    {
+        using var device=CreateFile(path,0,3,0,3,0,0);if(device.IsInvalid)return false;
+        var a=new HidAttributes{Size=Marshal.SizeOf<HidAttributes>()};
+        return HidD_GetAttributes(device,ref a)&&a.Vendor==0xF0DE&&a.Product==0xA000+player;
+    }
+    private static bool Administrative(ControlRow row)=>Regex.IsMatch(row.SourceKey??"","^(Test|Service)",RegexOptions.IgnoreCase)||Regex.IsMatch(row.Function,"volume|service|test menu|test mode|exit|quit",RegexOptions.IgnoreCase);
+    private static async Task WaitForPlayableScene(GameSession session)
+    {
+        var started=Stopwatch.StartNew();
+        while(started.Elapsed<TimeSpan.FromSeconds(150))
+        {
+            RequireGame(session);string frame=Capture(session,"startup-scene");string text=await SceneText(Path.Combine(output,frame));
+            var (ready,loading)=SceneSignals(text,gameObservation?.Sample().GameStatus);
+            evidence.Add(new {stage="scene-readiness",seconds=started.Elapsed.TotalSeconds,frame,text,loading,ready});
+            Console.WriteLine($"Scene at {started.Elapsed.TotalSeconds:F0}s: "+text.Replace('\r',' ').Replace('\n',' '));
+            if(ready)return;
+            await Delay(5000);
+        }
+        throw new IOException("The renderer never reached a recognized game/menu scene. No button or aiming replay was accepted as gameplay verification.");
+    }
+    private static (bool Ready,bool Loading) SceneSignals(string text,byte? gameStatus=null)
+    {
+        bool loading=Regex.IsMatch(text,"LOADING|NO.*GVR[I1O0]|NO.*ALIENS.*GUNS",RegexOptions.IgnoreCase);
+        // The arcade font's A is read as R in actual Windows OCR captures.
+        bool menu=Regex.IsMatch(text,"PRESS.*ST[AR4]RT|INSERT.*COIN|FREE\\s*PL[AR4]Y|SELECT.*MISSION|MISSION.*SELECT|SELECT.*LEVEL",RegexOptions.IgnoreCase);
+        return (!loading&&(menu||gameStatus is 4 or 64),loading);
+    }
+    private static async Task<string> SceneText(string file)
+    {
+        var engine=global::Windows.Media.Ocr.OcrEngine.TryCreateFromUserProfileLanguages();
+        if(engine is null)throw new IOException("No Windows OCR language is installed; automatic scene readiness cannot be established.");
+        var image=await global::Windows.Storage.StorageFile.GetFileFromPathAsync(file);
+        using var stream=await image.OpenAsync(global::Windows.Storage.FileAccessMode.Read);
+        var decoder=await global::Windows.Graphics.Imaging.BitmapDecoder.CreateAsync(stream);
+        using var bitmap=await decoder.GetSoftwareBitmapAsync(global::Windows.Graphics.Imaging.BitmapPixelFormat.Bgra8,global::Windows.Graphics.Imaging.BitmapAlphaMode.Premultiplied);
+        return (await engine.RecognizeAsync(bitmap)).Text;
+    }
+    private static void RequireGame(GameSession session)
+    {
+        cancel.Token.ThrowIfCancellationRequested();
+        if(!session.Active||!session.GameWindowAvailable||!session.HasGameForeground())throw new IOException("Game lost foreground. Input replay stopped before sending another action.");
+    }
+    private static RawPacket[] Drain(){var list=new List<RawPacket>();while(packets.TryDequeue(out var p))list.Add(p);return list.ToArray();}
+    private static async Task Action(GameSession session,HMController[] devices,List<GunBinding> players,ControlRow row)
+    {
+        RequireGame(session);var match=Regex.Match(row.Expression??"",@"^P([12])\|(mouse|key):(\d+)$");
+        if(!match.Success){evidence.Add(new {stage="action",row.Player,row.Function,row.Expression,status="not-replayable"});return;}
+        int p=int.Parse(match.Groups[1].Value),code=int.Parse(match.Groups[3].Value);bool mouse=match.Groups[2].Value=="mouse";
+        if(!mouse&&code is 27 or 91 or 92 or 0x73 or 0x79 or 0x7b){evidence.Add(new{stage="action",row.Player,row.Function,status="reserved-system-or-exit-key"});return;}
+        string before=Capture(session,$"p{p}-{row.SourceKey}-before");var gameBefore=gameObservation?.Sample();var pipeBefore=pipe?.Sample();AliensSample? gameHeld=null;PipeSample? pipeHeld=null;Drain();
+        try{Send(devices[p-1],mouse,code,true);await Delay(150);gameHeld=gameObservation?.Sample();pipeHeld=pipe?.Sample();}
+        finally{Send(devices[p-1],mouse,code,false);}
+        await Delay(300);var received=Drain();string id=mouse?players[p-1].MouseId:players[p-1].KeyboardId!;
+        bool down=received.Any(r=>r.DeviceId==id&&(mouse?(r.Buttons&(1<<((code-1)*2)))!=0:r.Key==code&&r.Down));
+        bool up=received.Any(r=>r.DeviceId==id&&(mouse?(r.Buttons&(2<<((code-1)*2)))!=0:r.Key==code&&!r.Down));
+        var other=players.Single(b=>b.Player!=p);string otherId=mouse?other.MouseId:other.KeyboardId!;
+        bool isolated=!received.Any(r=>r.DeviceId==otherId&&(mouse?(r.Buttons&(3<<((code-1)*2)))!=0:r.Key==code));
+        var pipeReleased=pipe?.Sample();uint? expectedMask=pipe is null?null:TeknoPipeObservation.Mask(row.SourceKey);
+        bool? routed=pipe is not null&&expectedMask is {} mask?pipeBefore?.Buttons==0&&pipeHeld?.Buttons==mask&&pipeReleased?.Buttons==0:null;
+        evidence.Add(new {stage="action",emulatorInputVerified=routed,pipeBefore,pipeHeld,pipeReleased,expectedMask,row.Player,row.Function,row.Expression,rawPressed=down,rawReleased=up,isolated,
+            gameBefore,gameHeld,gameReleased=gameObservation?.Sample(),before,after=Capture(session,$"p{p}-{row.SourceKey}-after"),gameResponse="requires-visual-review"});
+        if(routed==false)throw new IOException($"P{p} {row.Function}: emulator input state did not match its press and release.");
+        if(!down||!up||!isolated)throw new IOException($"P{p} {row.Function}: incomplete or cross-player RawInput press/release pair.");
+    }
+    private static async Task Sweep(GameSession session,HMController device,GunBinding player)
+    {
+        RequireGame(session);Drain();timed.Clear();var sent=new List<(int X,long Time)>();
+        for(int i=0;i<=120;i++)
+        {
+            RequireGame(session);int x=(int)Math.Round(i*32767d/120);
+            sent.Add(((int)Math.Round(x*65535d/32767),Stopwatch.GetTimestamp()));
+            device.SubmitMouse(new HMMouseState{X=x,Y=16384});await Delay(8);
+        }
+        await Delay(100);
+        var received=timed.Where(r=>r.Packet.DeviceId==player.MouseId&&r.Packet.Absolute).ToArray();
+        var latency=new List<double>();
+        foreach(var s in sent)
+        {
+            var r=received.FirstOrDefault(r=>r.Time>=s.Time&&Math.Abs(r.Packet.X-s.X)<=64);
+            if(r.Time!=0)latency.Add((r.Time-s.Time)*1000d/Stopwatch.Frequency);
+        }
+        var values=received.Select(r=>r.Packet.X).ToArray();
+        bool monotonic=values.Zip(values.Skip(1)).All(pair=>pair.First<=pair.Second);
+        latency.Sort();
+        evidence.Add(new {stage="sweep",player=player.Player,submitted=sent.Count,received=received.Length,
+            matched=latency.Count,monotonic,minX=values.DefaultIfEmpty(-1).Min(),maxX=values.DefaultIfEmpty(-1).Max(),
+            p50DeliveryMilliseconds=latency.Count>0?(double?)latency[latency.Count/2]:null,
+            p95DeliveryMilliseconds=latency.Count>0?(double?)latency[(int)((latency.Count-1)*.95)]:null,
+            frame=Capture(session,$"p{player.Player}-sweep-end"),
+            note="Latency is virtual HID submission to this RawInput receiver. Camera tracking and rendered frame latency are not measured."});
+        if(!monotonic||latency.Count<sent.Count*.95)throw new IOException($"P{player.Player} sweep lost or reordered input reports.");
+    }
+    private static void Send(HMController device,bool mouse,int code,bool down)
+    {
+        if(mouse){if(code is <1 or >5)throw new ArgumentOutOfRangeException(nameof(code));device.SubmitMouse(new HMMouseState{X=16384,Y=16384,Buttons=down?(HMMouseButtons)(1<<(code-1)):0});return;}
+        int usage=code switch {>=65 and <=90=>code-65+4,>=49 and <=57=>code-49+0x1e,48=>0x27,13=>0x28,27=>0x29,8=>0x2a,9=>0x2b,32=>0x2c,37=>0x50,38=>0x52,39=>0x4f,40=>0x51,>=112 and <=123=>code-112+0x3a,_=>throw new NotSupportedException($"Virtual key {code} needs a reviewed HID translation.")};
+        device.SubmitKeyboard(HMKeyModifiers.None,down?new[]{(HMKey)usage}:ReadOnlySpan<HMKey>.Empty);
+    }
+    private static string Capture(GameSession session,string name)
+    {
+        RequireGame(session);if(!GetClientRect(session.GameWindow,out var rect))throw new IOException("Cannot inspect game client rectangle.");
+        var origin=new PointNative();if(!ClientToScreen(session.GameWindow,ref origin)||rect.Right<1||rect.Bottom<1)throw new IOException("Invalid renderer dimensions.");
+        nint monitor=MonitorFromWindow(session.GameWindow,2);var info=new MonitorInfo{Size=Marshal.SizeOf<MonitorInfo>()};
+        if(!GetMonitorInfo(monitor,ref info))throw new IOException("Cannot inspect the game monitor.");
+        using var full=GpuCapture.Frame(monitor);
+        var region=new Rectangle(origin.X-info.Monitor.Left,origin.Y-info.Monitor.Top,rect.Right,rect.Bottom);
+        if(region.Left<0||region.Top<0||region.Right>full.Width||region.Bottom>full.Height)throw new IOException("The game client extends outside its captured GPU output.");
+        int width=name=="startup-scene"?1600:960;
+        using var small=new Bitmap(width,Math.Max(1,(int)(region.Height*width/(double)region.Width)));
+        using(var g=Graphics.FromImage(small))g.DrawImage(full,new Rectangle(0,0,small.Width,small.Height),region,GraphicsUnit.Pixel);
+        string file=$"{DateTime.UtcNow:HHmmssfff}-{Regex.Replace(name,@"[^\w-]","_")}.jpg";small.Save(Path.Combine(output,file),ImageFormat.Jpeg);return file;
+    }
+    [StructLayout(LayoutKind.Sequential)]private struct MonitorInfo{public int Size;public Rect Monitor,Work;public uint Flags;}
+    [DllImport("user32.dll")]private static extern nint MonitorFromWindow(nint window,uint flags);
+    [DllImport("user32.dll")]private static extern bool GetMonitorInfo(nint monitor,ref MonitorInfo info);
+    [StructLayout(LayoutKind.Sequential)]private struct Rect{public int Left,Top,Right,Bottom;}
+    [StructLayout(LayoutKind.Sequential)]private struct PointNative{public int X,Y;}
+    [StructLayout(LayoutKind.Sequential)]private struct HidAttributes{public int Size;public ushort Vendor,Product,Version;}
+    [DllImport("user32.dll")]private static extern bool GetClientRect(nint window,out Rect rect);
+    [DllImport("user32.dll")]private static extern bool ClientToScreen(nint window,ref PointNative point);
+    [DllImport("user32.dll")]private static extern short GetAsyncKeyState(int key);
+    [DllImport("user32.dll")]private static extern int GetSystemMetrics(int index);
+    [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]private static extern SafeFileHandle CreateFile(string path,uint access,uint share,nint security,uint creation,uint flags,nint template);
+    [DllImport("hid.dll")]private static extern bool HidD_GetAttributes(SafeFileHandle device,ref HidAttributes attributes);
+}

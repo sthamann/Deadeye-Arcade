@@ -11,6 +11,10 @@ public static class GameControlAudit
     public static bool GameplayAction(string name) => !name.Contains("NOT USED",StringComparison.OrdinalIgnoreCase)
         && !name.Equals("Cutscenes Skip (also skips game)",StringComparison.OrdinalIgnoreCase)
         && !System.Text.RegularExpressions.Regex.IsMatch(name,@"^(Service|Test(?:Menu)?|Volume|Xtreme Audio|Rear Cover Eye|Enter Switch|Up Select|Down Select|Select Up|Select Down|Menu Up|Menu Down|Menu Left|Menu Right)\b",System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+    public static bool GameplayAction(ControlRow row,GameEntry game) => GameplayAction(row.Function)
+        // Extermination calls its cabinet service-menu selector simply "Select".
+        // Keep real gameplay Select controls in all other profiles audited.
+        && !(game.Source=="teknoparrot" && Path.GetFileNameWithoutExtension(game.SourcePath)=="AliensExtermination" && row.SourceKey=="Service1");
     public static string[] RequiredDolphin(string id)
     {
         string[] common = ["Buttons/A", "Buttons/B", "Buttons/+"];
@@ -70,7 +74,7 @@ public static class GameControlAudit
             }
             else
             {
-                var rows = controls.Rows.Where(r=>r.Player==gun.Player && GameplayAction(r.Function)).ToArray();
+                var rows = controls.Rows.Where(r=>r.Player==gun.Player && GameplayAction(r,game)).ToArray();
                 if(tekno is not null)
                     foreach(var conflict in ExtraInputConflicts(rows))
                     {missing=true;issues.Add(I18n.T("Mehrere Spielaktionen verwenden dieselbe Gun-Taste: ")+conflict);}
@@ -79,7 +83,7 @@ public static class GameControlAudit
                         if(tekno.Match(requiredRow,rows) is null)
                         {missing=true;issues.Add(I18n.T("Benötigter Eingang fehlt im Spielprofil: ")+requiredRow.Function);}
                 if(rows.Length==0) {issues.Add(I18n.T("Spielbelegung für diesen Spieler ist nicht auslesbar."));review=true;}
-                if(game.Source=="teknoparrot" && rows.Length==0 && !guns.Any(g=>g.Player==1) && controls.Rows.Any(r=>r.Player==1 && GameplayAction(r.Function)))
+                if(game.Source=="teknoparrot" && rows.Length==0 && !guns.Any(g=>g.Player==1) && controls.Rows.Any(r=>r.Player==1 && GameplayAction(r,game)))
                 {
                     missing=true;
                     issues.Add(I18n.T("Dieses Spielprofil benötigt eine Gun auf P1. Weise die gewünschte Gun P1 zu."));

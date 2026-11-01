@@ -21,7 +21,7 @@ public static class ControlSimulation
             try
             {
                 var audit=GameControlAudit.Read(game,data,guns,devices);
-                var rows=OverlayControls.Read(game,data,guns,devices).Rows.Where(r=>!r.IsAim && GameControlAudit.GameplayAction(r.Function) && audit.Players.Any(p=>p.Player==r.Player)).ToList();
+                var rows=OverlayControls.Read(game,data,guns,devices).Rows.Where(r=>!r.IsAim && GameControlAudit.GameplayAction(r,game) && audit.Players.Any(p=>p.Player==r.Player)).ToList();
                 if(DolphinSetup.IsDolphin(game))
                 {
                     rows.Clear();string? id=DolphinSetup.DiscId(game);

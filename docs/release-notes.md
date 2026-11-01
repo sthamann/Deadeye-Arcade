@@ -1,8 +1,10 @@
-Restore the full aiming range in Aliens: Extermination on displays with Windows scaling.
+Add an optional live input diagnostic tool alongside the Windows frontend.
 
-- Automatically select TeknoParrot’s normalized fullscreen input route for absolute RawInput guns in Aliens: Extermination and Aliens: Armageddon.
-- Keep the game at the monitor’s native resolution while avoiding the windowed input conversion that mixes scaled desktop units with physical window pixels.
-- Preserve the existing windowed route for relative mouse input and other input APIs.
-- Apply the correction when preparing a game, with a backup of the original profile. Gun assignments, button mappings, calibration and the library are preserved.
+- Deadeye Input Lab creates two independent absolute HID test guns with keyboard collections and reuses the assigned guns' learned mappings through the normal game launch path.
+- Check aiming endpoints, continuous sweeps, button press and release events and player isolation, with game screenshots and separate input delivery results.
+- Direct TeknoParrot profiles without external helpers are the first supported adapter. The reviewed Aliens emulator build also has a read-only input exchange probe for axis limits and action bits.
+- Scene readiness, emulator input routing and actual gameplay remain separate results. Unknown scenes and unsupported emulator builds are reported explicitly.
+- Preserve the original profile, check restoration by hash and keep the library read only. Test devices are removed when the tool exits.
+- Exclude Aliens Extermination's cabinet Service Select route from gameplay requirements while retaining real gameplay Select actions.
 
-This fixes the launch configuration responsible for aiming being confined to the upper-left quarter at 200% Windows scaling. Physical aiming and complete gameplay remain separate from automated input and startup checks.
+Input Lab is a separate portable download. Its test driver and local signing certificate require explicit installation; Deadeye Setup and ordinary game startup do not install them. Physical tracking, calibration, recoil and game response still need their own verification.
