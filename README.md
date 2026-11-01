@@ -222,6 +222,7 @@ Input Lab requires an explicitly installed test driver and local signing
 certificate. These are **not installed by the frontend or ordinary game setup**.
 Its changes to the selected profile are backed up and restored, and the library
 remains read only. Use it on a test PC with other applications closed.
+[Native replay results and current coverage](docs/verification-0.3.62.md).
 
 ## Updates and your data
 
