@@ -40,14 +40,14 @@ virtual-input observations where an adapter was available.
 | The House of the Dead 4 Special | Renderer starts and receives virtual input packets. | Still displays the cabinet ride-reset prompt after both ordinary Start presses and a one-second hold. Session-end anomalies were retained. Not accepted as working gameplay. |
 | The House of the Dead EX | Rejected as renderer-unresponsive, with and without the Deadeye menu. | Startup remains unresolved. The staged shared loader library matched the available source file, ruling out a simple missing/different-copy explanation. |
 | The House of the Dead, Model 2 | Native launch, rendered output, menu/resume and cleanup passed. | Complete button coverage and independent P2 actions have not been measured. |
-| The House of the Dead, Saturn | Native launch, menu/resume and cleanup passed. | Complete game-specific gun controls and physical play remain unverified. |
+| The House of the Dead, Saturn | Native launch, menu/resume and cleanup passed. | Control audit flags missing core-specific A/B/C/Reload routes and shared keyboard codes across guns. Full control coverage is not accepted. |
 | The House of the Dead 2, Naomi | Native launch, menu/resume and cleanup passed. | Actual gun actions and independent P2 gameplay. |
 | The House of the Dead 2, Dreamcast | Native launch, menu/resume and cleanup passed. | Actual gun actions and independent P2 gameplay. |
 | The House of the Dead 2, classic Windows | Rejected: process exits with code -1 before a renderer appears. | Startup remains unresolved. DDrawCompat was already present and initialized; a missing wrapper is not the established cause. |
 | The House of the Dead III, classic Windows with Arcade Mod | Rejected as renderer-unresponsive, also without the Deadeye menu. | Installed executable digest is absent from the mod's documented supported list. This is a compatibility lead, not a proven cause. Existing keyboard control mode is correct and was preserved. |
 | The House of the Dead III, Chihiro | Passed native launch, renderer response, menu/resume and cleanup when started as an ordinary user. | The first elevated test hit the emulator's administrator warning. No in-level gun-action certificate. |
 | The House of the Dead: Remake | Native launch, rendered menu, menu/resume and cleanup passed. Existing multiplayer input mode was confirmed. | Actual independent P2 actions and sustained play remain unverified. The two installed version-specific plugin DLLs deliberately self-select; their presence alone is not a conflict. |
-| The Walking Dead Arcade | Both players joined an active level. Separate reticles and ammunition counters were visible; each player's shot reduced its own ammunition from 8 to 7. Both aim sweeps and packet isolation passed. | Hits, complete special-action coverage, sustained play and physical tracking remain open. An initial cold launch was black; later launches rendered with and without the menu, so an overlay cause was not established. |
+| The Walking Dead Arcade | Both players joined an active level. Separate reticles and ammunition counters were visible; each player's shot reduced its own ammunition from 8 to 7. Both aim sweeps and packet isolation passed. | Hits, complete special-action coverage, sustained play and physical tracking remain open. Some attract-screen captures show overlapping image fragments; the in-level replay frames are clear. An initial cold launch was black; later launches rendered with and without the menu, so an overlay cause was not established. |
 | Terminator Salvation | Native launch/menu-resume passed. Virtual P1/P2 input, full aim sweeps and button press/release isolation passed. The replay advanced through mission selection into the cinematic and mission briefing. | In-level shots, grenade and magazine/pump reload effects were not established by the captured scenes. |
 | Terminator 2: Judgment Day, MAME | Native launch, menu/resume and cleanup passed. | Actual game-specific action effects, independent players and physical tracking. |
 
@@ -112,15 +112,18 @@ change; existing display behavior and installed multiplayer patches are preserve
 
 ## Published package verification
 
-The [0.3.63 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.63)
-passed [747 Windows core checks and eight scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41319015483).
+The [0.3.64 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.64)
+passed [756 Windows core checks and fourteen scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41326511458).
 The installer and optional Input Lab archive were checked against their published
-SHA-256 digests before installation.
+SHA-256 digests before installation. The installed version matched the release
+commit `0626dd289456e50b3b7963354035855b229339fa`.
 
-On the physical Windows console, the installed package then passed a Railbreak
-launch, menu/resume, renderer-response and cleanup check. Rez Infinite remained
-frozen and was correctly rejected as `renderer-unresponsive` with
-`rendererResponse.responding: false`, even without opening the overlay.
+On the physical console, the installed package passed additional House of the
+Dead 4 and Dead Space: Extraction launch, renderer-response, menu/resume,
+foreground and cleanup checks. The corrected House of the Dead 4 relative-input
+field remained disabled. Dolphin subscribed to both configured player streams;
+the bridge recorded 63 subscriptions and 4,012 frames sent for each slot. These
+are input-transport counters, not confirmations of in-level game actions.
 
 The library hash remained unchanged, no virtual test device collections remained,
 and the frontend returned to foreground. Both current and saved display modes
