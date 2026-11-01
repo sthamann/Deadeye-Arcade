@@ -112,19 +112,26 @@ change; existing display behavior and installed multiplayer patches are preserve
 
 ## Published package verification
 
-The [0.3.64 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.64)
-passed [756 Windows core checks and fourteen scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41326511458).
+The [0.3.66 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.66)
+passed [764 Windows core checks and fourteen scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41332439795).
 The installer and optional Input Lab archive were checked against their published
-SHA-256 digests before installation. The installed version matched the release
-commit `0626dd289456e50b3b7963354035855b229339fa`.
+SHA-256 digests before installation. The installed version matched release commit
+`61dc17fb1870cefe4eb582684a10de71baac170a`.
 
-On the physical console, the installed package passed additional House of the
-Dead 4 and Dead Space: Extraction launch, renderer-response, menu/resume,
-foreground and cleanup checks. The corrected House of the Dead 4 relative-input
-field remained disabled. Dolphin subscribed to both configured player streams;
-the bridge recorded 63 subscriptions and 4,012 frames sent for each slot. These
-are input-transport counters, not confirmations of in-level game actions.
+The installed package was then tested after deliberately restoring only the old
+HOTD III exclusive-fullscreen flag. Its ordinary automatic repair changed the
+flag back, retained the original backup and recorded `hod3-presentation` as
+repaired. The native game passed renderer response, foreground, menu/resume and
+owned process cleanup during a bounded 60-second check. GPU captures show the
+rendered game filling the physical display without window chrome. The observed
+window style also had the standard window frame flags removed.
+
+The separate Terminator replay reached an active two-player mission. Reviewed
+before/held/after images establish independent ammunition reductions from 60 to
+57 and reloads from 57 to 60 for each player. Grenade effects, confirmed hits,
+physical tracking and complete playthroughs remain unverified.
 
 The library hash remained unchanged, no virtual test device collections remained,
-and the frontend returned to foreground. Both current and saved display modes
-were 3840 × 2160 at 60 Hz. These package checks add no physical-gun gameplay claim.
+and the frontend returned to foreground. Both current and saved desktop display
+modes were 3840 × 2160 at 60 Hz. These package checks add no physical-gun gameplay
+claim for HOTD III.
