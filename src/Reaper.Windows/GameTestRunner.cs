@@ -81,6 +81,8 @@ internal static class GameTestRunner
         bool foreground = session.HasGameForeground();
         double foregroundStableSeconds=focusedSince is {} since?(elapsed.ElapsedMilliseconds-since)/1000.0:0;
         var before = session.LiveProcesses(); var details = session.InspectProcesses();
+        nint renderer=session.GameWindow;
+        var rendererResponse=available?await Task.Run(()=>NativeGameWindows.Responsiveness(renderer)):null;
         cancellation.Cancel();
         await session.End();
         string? error = null; GameTestFailure? failure = null;
@@ -101,6 +103,8 @@ internal static class GameTestRunner
             failure=new("windows-app-control",error,"",0,null);
         }
         if(error is null && !codeIntegrity.Checked) {error="Windows Code Integrity checks could not complete: "+codeIntegrity.Error;failure=new("diagnostics-unavailable",error,"",0,null);}
+        if(error is null && rendererResponse?.Responding==false) {error="The game renderer is not responding to Windows messages.";failure=new("renderer-unresponsive",error,"",0,null);}
+        if(error is null && rendererResponse is {Responding:null}) {error="Renderer responsiveness could not be checked: Windows error "+rendererResponse.Error;failure=new("diagnostics-unavailable",error,"",0,null);}
         if(error is null && blockingDialogAfterExit is not null) {error="A modal system or game dialog remained after cleanup: "+blockingDialogAfterExit.Title;failure=new("blocked-dialog-after-exit",error,"",0,null);}
         if(error is null && (!foreground || foregroundStableSeconds<2)) {error="The game window did not retain foreground focus.";failure=new("foreground-missing",error,"",0,null);}
         if(error is null && (after.Length>0 || session.CleanupIssues.Count>0)) {error="The game or its helpers did not close cleanly.";failure=new("cleanup-failed",error,"",0,null);}
@@ -123,7 +127,7 @@ internal static class GameTestRunner
             startupSeconds = observation.FirstReadyAt / 1000.0,
             phase = blockingDialog is null?observation.State:"blocked-dialog", cancelled, blockingDialog, blockingDialogAfterExit,
             exitedEarly = observation.State == "exited-early", windowObserved = observation.FirstReadyAt is not null,
-            gameWindowAvailable = available, foreground, foregroundStableSeconds, error, failure, codeIntegrity, processDetails = details,
+            gameWindowAvailable = available, foreground, foregroundStableSeconds, rendererResponse, error, failure, codeIntegrity, processDetails = details,
             processesBeforeExit = before, processesAfterExit = after, ended = !session.Active && after.Length == 0,
             controls, controlAudit = audit, controlSimulation = simulation, cleanupIssues = session.CleanupIssues,
             playerControls = state.Bindings.Select(binding => new { binding.Player, binding.SystemId, hints = StartupControls.ForPlayer(controls, binding) }),

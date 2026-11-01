@@ -39,15 +39,37 @@ internal static class Program
     {
         try
         {
+            if(args.Length>0 && args[0]=="capture")
+            {
+                // Read-only capture also works for games without a replay adapter.
+                // It creates no virtual devices and does not load or change a profile.
+                string destination=Option(args,"--output")??throw new ArgumentException("capture requires --output DIR");
+                Directory.CreateDirectory(destination);
+                nint foreground=GetForegroundWindow();
+                GetWindowThreadProcessId(foreground,out uint pid);
+                using var frame=GpuCapture.Frame(MonitorFromWindow(foreground,2));
+                using var small=new Bitmap(1600,Math.Max(1,(int)(frame.Height*1600d/frame.Width)));
+                using(var graphics=Graphics.FromImage(small))graphics.DrawImage(frame,0,0,small.Width,small.Height);
+                string name=DateTime.UtcNow.ToString("HHmmssfff");
+                small.Save(Path.Combine(destination,name+".jpg"),ImageFormat.Jpeg);
+                File.WriteAllText(Path.Combine(destination,name+".json"),JsonSerializer.Serialize(new {
+                    time=DateTimeOffset.Now,processId=pid,process=Process.GetProcessById((int)pid).ProcessName,
+                    width=frame.Width,height=frame.Height,remote=GetSystemMetrics(0x1000)!=0,
+                    captureBackend="dxgi-desktop-duplication",note="Observation only; no input or gameplay verification."
+                },json));
+                return 0;
+            }
             if(args is ["--self-check"])
             {
                 if(!SceneSignals("FREEPLRY").Ready||!SceneSignals("PRESS STRRT TO BEGIN").Ready
+                    ||!SceneSignals("Dress to start").Ready||!SceneSignals("Dress to stort").Ready
+                    ||!SceneSignals("INSERT CREDITS").Ready
                     ||SceneSignals("").Ready||SceneSignals("Loading audio systems 30% FREEPLAY").Ready
                     ||SceneSignals("NO GVRIO CARD FOUND").Ready)throw new IOException("Scene signal regression failed.");
-                Console.WriteLine("Scene signal checks passed (five recorded and negative cases).");return 0;
+                Console.WriteLine("Scene signal checks passed (eight recorded and negative cases).");return 0;
             }
             if(args.Length < 2 || args[0] is not ("plan" or "run"))
-                throw new ArgumentException("Usage: Deadeye.InputLab plan|run GAME_ID [--data DIR] [--output DIR] [--install-driver] [--input-route-probe] [--windowed-probe]");
+                throw new ArgumentException("Usage: Deadeye.InputLab plan|run GAME_ID [--data DIR] [--output DIR] [--install-driver] [--input-route-probe] [--windowed-probe]; capture --output DIR");
             string data = Option(args,"--data") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ReaperArcade");
             output = Path.GetFullPath(Option(args,"--output") ?? Path.Combine(data,"input-lab",DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")));
             var library = new LibraryStore(data).Load();
@@ -208,14 +230,56 @@ internal static class Program
             File.WriteAllText(Path.Combine(output,"launched-controls.json"),JsonSerializer.Serialize(controls,json));
             var actions=controls.Rows.Where(r=>r.Player is 1 or 2&&!r.IsAim&&!Administrative(r)).ToArray();
             evidence.Add(new {stage="control-audit",audit=GameControlAudit.Read(game,data,players),actions=actions.Select(r=>new {r.Player,r.Function,r.Expression})});
-            await Delay(2000);RequireGame(session);
             if(!routeProbe)await WaitForPlayableScene(session);
-            else evidence.Add(new {stage="scene-not-verified",note="Explicit input-route-only test. Gameplay remains unverified."});
+            else
+            {
+                await Delay(2000);RequireGame(session);
+                evidence.Add(new {stage="scene-not-verified",note="Explicit input-route-only test. Gameplay remains unverified."});
+            }
             neutralStop.Cancel();await neutral;
             // Credits and Start first. They are read from the launched profile.
-            foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"coin|start",RegexOptions.IgnoreCase)))
-                await Action(session,controllers,players,row);
+            foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"coin|credits?|start",RegexOptions.IgnoreCase))
+                .OrderBy(r=>Regex.IsMatch(r.Function,"start",RegexOptions.IgnoreCase)?1:0))
+            {
+                // The observed Tomb Raider cabinet needs four coin pulses per
+                // player. One pulse only reached 1/4 credit and could not start.
+                int presses=Path.GetFileNameWithoutExtension(game.SourcePath)=="TombRaider"
+                    &&Regex.IsMatch(row.Function,"coin",RegexOptions.IgnoreCase)?4:1;
+                for(int i=0;i<presses;i++)await Action(session,controllers,players,row);
+            }
             await Delay(5000);
+            if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath) is "HOTDSD" or "RaccoonRampage" or "TombRaider")
+            {
+                string profile=Path.GetFileNameWithoutExtension(game.SourcePath);
+                bool scarlet=profile=="HOTDSD";
+                int seconds=scarlet?65:profile=="RaccoonRampage"?45:55;
+                evidence.Add(new {stage="menu-warmup",profile,seconds,note="Observed start/selection flow; subsequent frames still require visual review."});
+                if(scarlet)
+                {
+                    // The opening animation can still consume an early Start.
+                    foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"start",RegexOptions.IgnoreCase)))
+                    {await Action(session,controllers,players,row);await Delay(1500);}
+                    await Delay(3000);
+                }
+                foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"trigger",RegexOptions.IgnoreCase)&&!Regex.IsMatch(r.Function,"sub",RegexOptions.IgnoreCase)))
+                    await Action(session,controllers,players,row);
+                if(scarlet)
+                {
+                    await Delay(3000);
+                    foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"gun trigger",RegexOptions.IgnoreCase)))
+                        await Action(session,controllers,players,row);
+                }
+                await Delay(seconds*1000);RequireGame(session);
+                if(scarlet)
+                {
+                    // Dismiss the opening shooting prompt before measuring the
+                    // later per-player actions in the active level.
+                    foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"gun trigger",RegexOptions.IgnoreCase)))
+                        await Action(session,controllers,players,row);
+                    await Delay(3000);
+                }
+                evidence.Add(new {stage="after-menu-warmup",frame=Capture(session,"after-menu-warmup"),note="Scene requires visual review."});
+            }
             if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath) is "AliensExtermination" or "JurassicPark")
             {
                 // Both reviewed titles have a 30-second mission vote. Let it
@@ -248,7 +312,7 @@ internal static class Program
                 }
                 await Sweep(session,controllers[p-1],players[p-1]);
             }
-            foreach(var row in actions.Where(r=>!Regex.IsMatch(r.Function,"coin|start",RegexOptions.IgnoreCase)))await Action(session,controllers,players,row);
+            foreach(var row in actions.Where(r=>!Regex.IsMatch(r.Function,"coin|credits?|start",RegexOptions.IgnoreCase)))await Action(session,controllers,players,row);
         }
         finally
         {
@@ -282,7 +346,15 @@ internal static class Program
         var started=Stopwatch.StartNew();
         while(started.Elapsed<TimeSpan.FromSeconds(150))
         {
-            RequireGame(session);string frame=Capture(session,"startup-scene");string text=await SceneText(Path.Combine(output,frame));
+            // Some launchers replace their console/splash with the renderer.
+            // Wait through that startup transition; replay still requires focus.
+            if(!session.GameWindowAvailable||!session.HasGameForeground())
+            {await Delay(500);continue;}
+            string frame;
+            try {frame=Capture(session,"startup-scene");}
+            catch(IOException) when(!session.GameWindowAvailable||!session.HasGameForeground())
+            {await Delay(500);continue;}
+            string text=await SceneText(Path.Combine(output,frame));
             var (ready,loading)=SceneSignals(text,gameObservation?.Sample().GameStatus);
             evidence.Add(new {stage="scene-readiness",seconds=started.Elapsed.TotalSeconds,frame,text,loading,ready});
             Console.WriteLine($"Scene at {started.Elapsed.TotalSeconds:F0}s: "+text.Replace('\r',' ').Replace('\n',' '));
@@ -295,7 +367,7 @@ internal static class Program
     {
         bool loading=Regex.IsMatch(text,"LOADING|NO.*GVR[I1O0]|NO.*ALIENS.*GUNS",RegexOptions.IgnoreCase);
         // The arcade font's A is read as R in actual Windows OCR captures.
-        bool menu=Regex.IsMatch(text,"PRESS.*ST[AR4]RT|INSERT.*COIN|FREE\\s*PL[AR4]Y|SELECT.*MISSION|MISSION.*SELECT|SELECT.*LEVEL",RegexOptions.IgnoreCase);
+        bool menu=Regex.IsMatch(text,"[PD]RESS.*ST[ARO4]RT|INSERT.*(?:COIN|CREDITS?)|FREE\\s*PL[AR4]Y|SELECT.*MISSION|MISSION.*SELECT|SELECT.*LEVEL",RegexOptions.IgnoreCase);
         return (!loading&&(menu||gameStatus is 4 or 64),loading);
     }
     private static async Task<string> SceneText(string file)
@@ -385,6 +457,8 @@ internal static class Program
     }
     [StructLayout(LayoutKind.Sequential)]private struct MonitorInfo{public int Size;public Rect Monitor,Work;public uint Flags;}
     [DllImport("user32.dll")]private static extern nint MonitorFromWindow(nint window,uint flags);
+    [DllImport("user32.dll")]private static extern nint GetForegroundWindow();
+    [DllImport("user32.dll")]private static extern uint GetWindowThreadProcessId(nint window,out uint process);
     [DllImport("user32.dll")]private static extern bool GetMonitorInfo(nint monitor,ref MonitorInfo info);
     [StructLayout(LayoutKind.Sequential)]private struct Rect{public int Left,Top,Right,Bottom;}
     [StructLayout(LayoutKind.Sequential)]private struct PointNative{public int X,Y;}

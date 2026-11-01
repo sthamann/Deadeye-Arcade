@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -20,20 +21,28 @@ internal static class GpuCapture
             {
                 var description=output.Description;
                 if(!description.AttachedToDesktop||description.Monitor!=monitor)continue;
-                using var output1=output.QueryInterface<IDXGIOutput1>();
+                using var output5=output.QueryInterface<IDXGIOutput5>();
                 D3D11.D3D11CreateDevice(candidate,DriverType.Unknown,DeviceCreationFlags.BgraSupport,
                     new[]{FeatureLevel.Level_11_0,FeatureLevel.Level_10_0},out ID3D11Device? created).CheckError();
                 using var device=created??throw new InvalidOperationException("GPU capture device could not be created.");
                 using(var context=device.ImmediateContext)
-                using(var duplication=output1.DuplicateOutput(device))
+                // Explicitly request the byte format used by the bitmap. HDR
+                // outputs can otherwise supply half-float pixels, not BGRA8.
+                using(var duplication=output5.DuplicateOutput1(device,new[]{Format.B8G8R8A8_UNorm}))
                 {
-                    duplication.AcquireNextFrame(2000,out _,out var resource).CheckError();
+                  for(int attempt=0;attempt<4;attempt++)
+                  {
+                    duplication.AcquireNextFrame(2000,out var frameInfo,out var resource).CheckError();
                     try
                     {
                         using(resource)
-                        using(var source=resource.QueryInterface<ID3D11Texture2D>())
                         {
+                            using var source=resource.QueryInterface<ID3D11Texture2D>();
                             var desc=source.Description;
+                            Console.WriteLine($"DXGI frame: present={frameInfo.LastPresentTime}; accumulated={frameInfo.AccumulatedFrames}; protected={frameInfo.ProtectedContentMaskedOut}; format={desc.Format}; size={desc.Width}x{desc.Height}");
+                            if(frameInfo.ProtectedContentMaskedOut)throw new IOException("Windows masked protected image content; capture is unavailable.");
+                            if(frameInfo.LastPresentTime==0)continue; // Pointer-only update, not a new desktop image.
+                            if(desc.Format!=Format.B8G8R8A8_UNorm)throw new IOException("DXGI returned a pixel format outside the requested capture contract.");
                             desc.Usage=ResourceUsage.Staging;desc.BindFlags=BindFlags.None;
                             desc.CPUAccessFlags=CpuAccessFlags.Read;desc.MiscFlags=ResourceOptionFlags.None;
                             using var staging=device.CreateTexture2D(desc);
@@ -59,6 +68,8 @@ internal static class GpuCapture
                         }
                     }
                     finally{duplication.ReleaseFrame();}
+                  }
+                  throw new IOException("DXGI supplied no updated desktop image after four frames.");
                 }
             }
         }

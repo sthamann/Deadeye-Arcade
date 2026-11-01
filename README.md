@@ -200,7 +200,8 @@ report formats and detailed coverage are documented in the
 
 For a focused menu and resume check, use
 `ReaperArcade.exe --test-game <game-id> 120 --with-overlay`. It opens the native
-menu, resumes the game and checks renderer focus and cleanup. Each owned session
+menu, resumes the game and checks renderer focus, message responsiveness and
+cleanup. A frozen renderer cannot pass merely because its window is visible. Each owned session
 also saves `last-session-<game-id>.json` locally, including observed runtime exit
 codes and whether a stop was requested.
 
@@ -222,7 +223,8 @@ Input Lab requires an explicitly installed test driver and local signing
 certificate. These are **not installed by the frontend or ordinary game setup**.
 Its changes to the selected profile are backed up and restored, and the library
 remains read only. Use it on a test PC with other applications closed.
-[Native replay results and current coverage](docs/verification-0.3.62.md).
+[Recent native game checks and open issues](docs/native-game-checks.md) ·
+[Initial replay coverage](docs/verification-0.3.62.md).
 
 ## Updates and your data
 

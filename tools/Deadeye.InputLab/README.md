@@ -46,6 +46,18 @@ exit controls are excluded from gameplay replay.
 Screenshots use DXGI Desktop Duplication on the game's monitor. Tests should run
 in the local console session; unsupported GPU capture fails explicitly.
 
+For launch checks of games without a replay adapter, capture the current monitor:
+
+```powershell
+Deadeye.InputLab.exe capture --output C:\Lightgun\Tests\Capture
+```
+
+This command creates no virtual devices, opens no game and changes no profiles.
+It records the foreground process, physical output size and Remote Desktop state
+alongside the GPU image. Pair it with the frontend's existing `--test-game`
+command to inspect a running game and its overlay. These observations cover
+presentation and launch behaviour; they do not verify gun input in that game.
+
 The output directory contains the original profile, a restoration manifest, the
 controls read from the launched profile, RawInput observations and screenshots.
 The tool checks both ends and the middle of each aiming axis, and the actual
@@ -59,6 +71,13 @@ The replay waits for that timer and uses each player's mapped trigger to dismiss
 the briefing before its aiming grid and weapon sequence. The resulting scene is
 captured for review. Actions have before, held and released screenshots. The
 mission warmup is skipped by the explicit input-route-only probe.
+
+Scarlet Dawn, Raccoon Rampage and Tomb Raider have additional selection warmups
+based on observed menu flows. The tool records those steps and the resulting
+scene for review. It also recognizes the observed OCR spellings of Raccoon's
+start prompt and Tomb Raider's `Insert credits` prompt. Loading-screen rejection
+still takes precedence over menu text. A completed warmup does not itself prove
+that a level started or that both players joined.
 
 Each player also receives a 121-point horizontal sweep. Reported delivery timing
 is measured between virtual HID submission and this tool's RawInput receiver.
@@ -88,3 +107,17 @@ sets its expected emulator button bit and clears it on release. A mismatch fails
 the run. An unknown emulator build is refused. This establishes input routing
 through the emulator, including the scaled-window regression, without treating a
 loading screen as working gameplay.
+
+## Capture and replay limits
+
+The GPU capture backend requests BGRA8 output, skips pointer-only updates and
+rejects protected or unexpected surfaces. This avoids misleading black captures
+on HDR/fullscreen output. Capture metadata records the process, output dimensions
+and whether the session is remote.
+
+The reviewed arcade recipes insert credits before Start. The observed Tomb
+Raider cabinet needs four coin pulses per player; it still requires a verified
+transition into gameplay. Warmup completion and a received Start key cannot
+establish that transition. Generic replay keeps `gameplayVerified` false.
+
+[Additional native game observations and unresolved issues](../../docs/native-game-checks.md)

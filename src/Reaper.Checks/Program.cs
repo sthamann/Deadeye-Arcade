@@ -28,6 +28,8 @@ if (OperatingSystem.IsWindows())
     try
     {
         Check(libraryWindow!=0 && rendererWindow!=0 && Reaper.Windows.NativeGameWindows.DolphinRenderer(Environment.ProcessId,libraryWindow)==rendererWindow,"Native window enumeration selects the Dolphin renderer while the old library window remains alive");
+        Check(Reaper.Windows.NativeGameWindows.Responsiveness(rendererWindow).Responding==true,"The real native renderer responsiveness probe accepts a message-processing window");
+        Check(Reaper.Windows.NativeGameWindows.Responsiveness(0).Responding is null,"A missing renderer remains unknown rather than being reported responsive or hung");
         WindowFixture.SetWindowPos(libraryWindow,0,0,0,0,0,0x0003);
         Check(Reaper.Windows.NativeGameWindows.DolphinRenderer(Environment.ProcessId,rendererWindow)==rendererWindow,"Raising the old Dolphin GUI cannot replace the active native renderer");
         Check(Reaper.Windows.NativeGameWindows.DolphinRenderer(Environment.ProcessId+1,rendererWindow)==0,"A matching renderer title from another process cannot enter a game session");
@@ -38,6 +40,15 @@ if (OperatingSystem.IsWindows())
         Check(Reaper.Windows.NativeGameWindows.DolphinRenderer(Environment.ProcessId,0)==0,"A surviving Dolphin library window cannot masquerade as a rendered game after its renderer closes");
     }
     finally {if(rendererWindow!=0)WindowFixture.DestroyWindow(rendererWindow);if(libraryWindow!=0)WindowFixture.DestroyWindow(libraryWindow);}
+    using(var ready=new ManualResetEventSlim())
+    using(var finish=new ManualResetEventSlim())
+    {
+        nint hungWindow=0;
+        var owner=new Thread(()=>{hungWindow=WindowFixture.CreateWindowExW(0,"STATIC","Unresponsive renderer fixture",0,0,0,100,100,0,0,0,0);ready.Set();finish.Wait();if(hungWindow!=0)WindowFixture.DestroyWindow(hungWindow);}){IsBackground=true};
+        owner.Start();
+        try {Check(ready.Wait(5000)&&hungWindow!=0&&Reaper.Windows.NativeGameWindows.Responsiveness(hungWindow).Responding==false,"A native renderer whose owner does not process messages fails the bounded responsiveness probe");}
+        finally {finish.Set();owner.Join(5000);}
+    }
     nint unrealOld=WindowFixture.CreateUnreal("First renderer"),unrealNew=WindowFixture.CreateUnreal("Replacement renderer");
     nint unrelated=WindowFixture.CreateWindowExW(0,"STATIC","Replacement renderer",0x10000000,0,0,100,100,0,0,0,0);
     try

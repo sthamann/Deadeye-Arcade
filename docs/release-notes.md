@@ -1,12 +1,10 @@
-Replay two lightguns through real game profiles with an optional diagnostic tool.
+Improve native game diagnostics and extend the optional input replay tool.
 
-- Deadeye Input Lab creates two independent absolute HID test guns with keyboard collections and reuses the assigned guns' learned mappings through the normal game launch path.
-- Check aiming endpoints, continuous sweeps, button press and release events and player isolation, with GPU screenshots and separate input delivery results.
-- Allow the reviewed Aliens Extermination and Jurassic Park mission-selection timers to finish before aiming and weapon replay. Save before, held and released images for each action.
-- Record the tool version, tool binary hash and emulator binary hash in each run, and keep cabinet test-menu controls out of gameplay replay.
-- Direct TeknoParrot profiles without external helpers are the first supported adapter. The reviewed Aliens emulator build also has a read-only input exchange probe for axis limits and action bits.
-- Scene readiness, emulator input routing and actual gameplay remain separate results. Unknown scenes and unsupported emulator builds are reported explicitly.
-- Preserve the original profile, check restoration by hash and keep the library read only. Test devices are removed when the tool exits.
-- Exclude Aliens Extermination's cabinet Service Select route from gameplay requirements while retaining real gameplay Select actions.
+- Reject a launch check when the actual renderer does not respond to Windows messages. Reports retain the response and native error rather than treating a visible, frozen window as success.
+- Correct GPU screenshots on HDR/fullscreen output by requesting BGRA8 and waiting for a real image update.
+- Add a read-only Input Lab capture command for games without a replay adapter. It creates no virtual guns and changes no game configuration.
+- Recognize additional observed arcade Start/Credits prompts and allow launcher-to-renderer transitions during scene readiness.
+- Extend reviewed startup sequences for Raccoon Rampage, Scarlet Dawn and Tomb Raider. Insert credits before Start and use four coin pulses for the observed Tomb Raider cabinet.
+- Document additional native checks and unresolved issues. Raccoon Rampage and Scarlet Dawn reached two-player gameplay; Tomb Raider gameplay entry and Rez Infinite startup remain unresolved.
 
-Input Lab is a separate portable download. Its test driver and local signing certificate require explicit installation; Deadeye Setup and ordinary game startup do not install them. Physical tracking, calibration, recoil and game response still need their own verification.
+Input delivery, a rendered menu and verified gameplay remain separate results. The optional input tool does not certify physical tracking, calibration, recoil, all buttons or a complete playthrough. Its driver is not installed by the ordinary frontend.

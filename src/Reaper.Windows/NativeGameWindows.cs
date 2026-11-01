@@ -4,6 +4,8 @@ using Reaper.Core;
 
 namespace Reaper.Windows;
 
+internal sealed record WindowResponsiveness(bool? Responding,int Error);
+
 internal static class NativeGameWindows
 {
     private delegate bool EnumWindow(nint window,nint parameter);
@@ -15,6 +17,14 @@ internal static class NativeGameWindows
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint window,out uint processId);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] private static extern int GetWindowTextW(nint window,StringBuilder text,int capacity);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] private static extern int GetClassNameW(nint window,StringBuilder text,int capacity);
+    [DllImport("user32.dll",SetLastError=true)] private static extern nint SendMessageTimeoutW(nint window,uint message,nint wParam,nint lParam,uint flags,uint timeout,out nint result);
+    public static WindowResponsiveness Responsiveness(nint window)
+    {
+        if(window==0)return new(null,1400);
+        bool responding=SendMessageTimeoutW(window,0,0,0,0x3,250,out _)!=0;
+        int error=responding?0:Marshal.GetLastWin32Error();
+        return new(responding?true:error is 0 or 1460?false:null,error);
+    }
     public static string DialogText(nint window)
     {
         var lines=new List<string>();int count=0;
