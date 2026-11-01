@@ -754,6 +754,21 @@ RButton::y
     Check(configuredTp.Descendants("DeviceType").Count(e=>e.Value=="Mouse")==2 && configuredTp.Descendants("KeyboardKey").Any(e=>e.Value=="D1"),"TeknoParrot maps aim/trigger to the gun mouse and Start to its keyboard");
     Check(configuredTp.Descendants("FieldValue").Single().Value=="RawInput" && configuredTp.Descendants("BindName").Any(e=>e.Value=="Keep pedal") && TeknoGunSetup.Configure(repair,[new(1,mouse,"keyboard-1")])==0,"Automatic input setup is idempotent and preserves title-specific pedal controls");
     Check(OverlayControls.Read(repair,root,[new(1,mouse,"keyboard-1")]).Rows.Any(r=>r.Function=="Player 1 Light Gun" && r.Input=="P1 · "+I18n.T("Zielen / Mausbewegung")),"TeknoParrot aim binding is shown as movement instead of an unassigned button");
+    string relativeAimPath=Path.Combine(tp,"UserProfiles","relative-aim.xml");
+    var relativeAimFixture=XDocument.Load(repairProfile);
+    relativeAimFixture.Root!.Element("ConfigValues")!.Add(new XElement("FieldInformation",new XElement("CategoryName","General"),new XElement("FieldName","Use Relative Input"),new XElement("FieldValue","1")));
+    var relativeAimGame=repair with{SourcePath=relativeAimPath};
+    foreach(string system in new[]{"rs3","sinden","xgunner","blamcon"})
+    {
+        relativeAimFixture.Save(relativeAimPath);
+        var absoluteGun=new GunBinding(1,"absolute-"+system,"keyboard-"+system,SystemId:system);
+        Check(GameControlAudit.Read(relativeAimGame,root,[absoluteGun]).Status=="needs-action","A stale relative aim mode is detected before launching a managed "+system+" gun profile");
+        TeknoGunSetup.Configure(relativeAimGame,[absoluteGun]);
+        Check(XDocument.Load(relativeAimPath).Descendants("FieldInformation").Single(f=>f.Element("FieldName")?.Value=="Use Relative Input").Element("FieldValue")?.Value=="0"
+            &&TeknoGunSetup.Configure(relativeAimGame,[absoluteGun])==0,"Managed "+system+" lightgun setup disables stale relative aim and remains idempotent");
+    }
+    relativeAimFixture.Save(relativeAimPath);TeknoGunSetup.Configure(relativeAimGame,[]);
+    Check(XDocument.Load(relativeAimPath).Descendants("FieldInformation").Single(f=>f.Element("FieldName")?.Value=="Use Relative Input").Element("FieldValue")?.Value=="1","A profile with no selected lightgun retains its relative input mode");
     var extraButtons=XDocument.Load(repairProfile);
     extraButtons.Root!.Element("JoystickButtons")!.Add(new XElement("JoystickButtons",new XElement("ButtonName","Player 1 Change")),new XElement("JoystickButtons",new XElement("ButtonName","Player 2 Change")),new XElement("JoystickButtons",new XElement("ButtonName","Player 2 Option")));
     extraButtons.Save(repairProfile);

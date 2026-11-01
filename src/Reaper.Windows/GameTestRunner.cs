@@ -81,6 +81,7 @@ internal static class GameTestRunner
         bool foreground = session.HasGameForeground();
         double foregroundStableSeconds=focusedSince is {} since?(elapsed.ElapsedMilliseconds-since)/1000.0:0;
         var before = session.LiveProcesses(); var details = session.InspectProcesses();
+        var inputBridge=session.InputDiagnostics();
         nint renderer=session.GameWindow;
         var rendererResponse=available?await Task.Run(()=>NativeGameWindows.Responsiveness(renderer)):null;
         cancellation.Cancel();
@@ -127,7 +128,7 @@ internal static class GameTestRunner
             startupSeconds = observation.FirstReadyAt / 1000.0,
             phase = blockingDialog is null?observation.State:"blocked-dialog", cancelled, blockingDialog, blockingDialogAfterExit,
             exitedEarly = observation.State == "exited-early", windowObserved = observation.FirstReadyAt is not null,
-            gameWindowAvailable = available, foreground, foregroundStableSeconds, rendererResponse, error, failure, codeIntegrity, processDetails = details,
+            gameWindowAvailable = available, foreground, foregroundStableSeconds, rendererResponse, inputBridge, error, failure, codeIntegrity, processDetails = details,
             processesBeforeExit = before, processesAfterExit = after, ended = !session.Active && after.Length == 0,
             controls, controlAudit = audit, controlSimulation = simulation, cleanupIssues = session.CleanupIssues,
             playerControls = state.Bindings.Select(binding => new { binding.Player, binding.SystemId, hints = StartupControls.ForPlayer(controls, binding) }),

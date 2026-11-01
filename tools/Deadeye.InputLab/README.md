@@ -5,8 +5,9 @@ It creates two independent absolute HID mice with keyboard collections, reuses
 the assigned guns' learned mappings and launches through Deadeye's existing
 `GameSession`. It does not use `SendInput` as a substitute for two physical devices.
 
-The first runnable adapter is a direct TeknoParrot absolute RawInput profile
-without external helpers. Profiles that can prepare shared Lindbergh libraries
+The TeknoParrot adapter runs direct absolute RawInput profiles without external
+helpers. An experimental Dolphin pilot attempts Extraction and Overkill replay through
+the production DSU input bridge in an isolated emulator user directory. Profiles that can prepare shared Lindbergh libraries
 (Primeval Hunt and HOTD 4 EX) are excluded until those files have a restore recipe. Other launch paths remain unsupported until their changed files have a
 reviewed restoration recipe. `plan` can read the existing controls for any game.
 
@@ -121,3 +122,38 @@ transition into gameplay. Warmup completion and a received Start key cannot
 establish that transition. Generic replay keeps `gameplayVerified` false.
 
 [Additional native game observations and unresolved issues](../../docs/native-game-checks.md)
+
+## Experimental isolated Dolphin replay
+
+`run` has an experimental adapter for the Dead Space: Extraction and House of the Dead:
+Overkill disc families when their accuracy profile and two gun assignments are
+available. It copies configuration INIs into a new `dolphin-user` directory beside
+the report, redirects NAND and memory-card paths there and disables SD-card
+writes. It does not copy the disc or existing saves. Original configuration files
+and the game library are checked again after the run.
+
+The pilot feeds the virtual devices through the actual RawInput receiver and
+`GameSession` into Dolphin's production DSU bridge. It records subscriptions and
+frames sent to each player slot, resolves required actions into physical button
+chords, and checks their press/release and player isolation. Boot observations
+handle the reviewed Wii notices and wait for a recognized title prompt before
+the aim grid and action replay. Missing subscriptions or an unknown boot scene
+fail explicitly.
+
+The native transport pilot received both controller subscriptions and delivered
+independent inputs. The later scene-gated run stopped on unrecognized boot/title
+images in both games. Automatic gameplay entry is unresolved; the adapter must not
+be presented as a completed gameplay test. `read-scene IMAGE` reads OCR from an
+existing image without creating devices or launching a game.
+
+These checks establish input transport and retain images for review. A title
+screen or matching DSU frame does not establish an in-level hit, reload, weapon
+selection or successful two-player gameplay. Tracking cameras and recoil remain
+outside this test.
+
+For a deliberate long-press comparison, use `--hold-ms 1000` with `run`. The
+accepted range is 50–2000 milliseconds. The requested duration is recorded in the
+report; it does not change the physical guns' firmware or normal game controls.
+
+The reviewed mission timers also cover Terminator Salvation and Walking Dead.
+Wait for the post-timer scene before interpreting the later weapon actions.

@@ -120,7 +120,9 @@ selected game before launch; a full library repair runs when you choose it in
 Settings. Aim and button tests are optional and never required to launch a game.
 
 At launch, Deadeye reads the selected physical guns and prepares supported game
-input files. Common actions follow your saved bindings; additional functions such
+input files. Stale relative-mouse presets are detected and switched to
+absolute aiming for the supported IR guns when the TeknoParrot profile provides
+that setting. Common actions follow your saved bindings; additional functions such
 as weapon change, grenades or pedals use reviewed title-specific routes. The
 startup reference shows the resulting profile and any unresolved controls.
 
@@ -212,8 +214,11 @@ for replaying two independent absolute HID guns and their keyboard buttons throu
 the real game launch path. It checks axis endpoints, continuous movement, press and
 release events and player isolation, and saves game screenshots beside the results.
 
-The first adapter covers supported direct TeknoParrot absolute RawInput profiles
-without external helpers.
+The TeknoParrot adapter covers supported direct absolute RawInput profiles without
+external helpers. An experimental Dolphin adapter for Extraction and Overkill
+records real controller subscriptions and keeps emulator writes in a separate user
+directory. Its automatic title recognition remains incomplete and can stop a
+replay even when the game itself starts correctly.
 A scene check rejects a renderer that remains on an unrecognized loading screen.
 Game response still requires a reviewed observation of the relevant action;
 receiving an input packet alone does not establish working gameplay. This tool

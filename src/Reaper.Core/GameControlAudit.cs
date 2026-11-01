@@ -43,12 +43,16 @@ public static class GameControlAudit
         string? id = dolphin ? DolphinSetup.DiscId(game) : null;
         string[] required = id is null ? [] : RequiredDolphin(id);
         bool requiredActionsChecked = dolphin ? required.Length > 0 : tekno is not null && tekno.Rows.All(r=>r.Player is >=1 and <=4) || mame is not null || TimeCrisis5Controls.Supports(game);
+        bool relativeAim=game.Source=="teknoparrot"&&File.Exists(game.SourcePath)
+            &&System.Xml.Linq.XDocument.Load(game.SourcePath).Descendants("FieldInformation").Any(f=>f.Element("FieldName")?.Value=="Use Relative Input"&&f.Element("FieldValue")?.Value=="1");
         var players = new List<PlayerControlAudit>();
         foreach(var gun in guns)
         {
             var issues = new List<string>();
             var hints = StartupControls.ForPlayer(controls,gun);
             bool review=!requiredActionsChecked, missing=false;
+            if(relativeAim&&TeknoGunSetup.AbsoluteAim(gun))
+            {missing=true;issues.Add(I18n.T("Relative Mauseingabe ist für diese absolute Lightgun aktiviert. Beim Spielstart wird das Profil korrigiert."));}
             if(!requiredActionsChecked) issues.Add(I18n.T("Die vollständige Liste benötigter Spielaktionen ist noch nicht geprüft."));
             if(tekno is not null)
                 foreach(var unscoped in tekno.Rows.Where(r=>r.Player==0))

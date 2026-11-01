@@ -26,6 +26,50 @@ ratings when selected. A high rating does not establish lightgun compatibility.
 | Blood Storm: Alien Purge | Native start, foreground/menu-resume and cleanup passed. | Actual gun actions and a fresh visual review using the corrected capture backend. |
 | Rez Infinite | Rejected: white startup window that does not respond to Windows messages. | Startup hang remains unresolved. |
 
+## Dead Space, House of the Dead, Walking Dead and Terminator
+
+A second group exercised sixteen additional installed launch paths on the native
+console. Checks ran for a bounded 50–120 seconds after startup, with further
+virtual-input observations where an adapter was available.
+
+| Game or edition | Observed result | Remaining verification or failure |
+| --- | --- | --- |
+| Dead Space: Extraction, Dolphin | Native launch, rendered title, menu/resume and cleanup passed. Two controller subscriptions and independent production DSU streams were observed in an isolated configuration. All 24 required action routes resolved. | Initial input replay occurred during boot. The stricter automatic title recognizer then refused the scene. In-level shooting, secondary actions and two-player gameplay remain unverified. |
+| The House of the Dead: Overkill, Dolphin | Native launch, menu/resume and cleanup passed. Two DSU consumers and all 16 required action routes were observed. | The scene-gated replay stopped during boot/movie recognition. In-level actions remain unverified. |
+| The House of the Dead 4 | Native launch and menu/resume passed. The production setup repaired an existing relative-input setting to absolute aim. | The later virtual replay stopped on an out-of-output capture/client transition and unexpected session end. No full input/gameplay pass is claimed. |
+| The House of the Dead 4 Special | Renderer starts and receives virtual input packets. | Still displays the cabinet ride-reset prompt after both ordinary Start presses and a one-second hold. Session-end anomalies were retained. Not accepted as working gameplay. |
+| The House of the Dead EX | Rejected as renderer-unresponsive, with and without the Deadeye menu. | Startup remains unresolved. The staged shared loader library matched the available source file, ruling out a simple missing/different-copy explanation. |
+| The House of the Dead, Model 2 | Native launch, rendered output, menu/resume and cleanup passed. | Complete button coverage and independent P2 actions have not been measured. |
+| The House of the Dead, Saturn | Native launch, menu/resume and cleanup passed. | Complete game-specific gun controls and physical play remain unverified. |
+| The House of the Dead 2, Naomi | Native launch, menu/resume and cleanup passed. | Actual gun actions and independent P2 gameplay. |
+| The House of the Dead 2, Dreamcast | Native launch, menu/resume and cleanup passed. | Actual gun actions and independent P2 gameplay. |
+| The House of the Dead 2, classic Windows | Rejected: process exits with code -1 before a renderer appears. | Startup remains unresolved. DDrawCompat was already present and initialized; a missing wrapper is not the established cause. |
+| The House of the Dead III, classic Windows with Arcade Mod | Rejected as renderer-unresponsive, also without the Deadeye menu. | Installed executable digest is absent from the mod's documented supported list. This is a compatibility lead, not a proven cause. Existing keyboard control mode is correct and was preserved. |
+| The House of the Dead III, Chihiro | Passed native launch, renderer response, menu/resume and cleanup when started as an ordinary user. | The first elevated test hit the emulator's administrator warning. No in-level gun-action certificate. |
+| The House of the Dead: Remake | Native launch, rendered menu, menu/resume and cleanup passed. Existing multiplayer input mode was confirmed. | Actual independent P2 actions and sustained play remain unverified. The two installed version-specific plugin DLLs deliberately self-select; their presence alone is not a conflict. |
+| The Walking Dead Arcade | Both players joined an active level. Separate reticles and ammunition counters were visible; each player's shot reduced its own ammunition from 8 to 7. Both aim sweeps and packet isolation passed. | Hits, complete special-action coverage, sustained play and physical tracking remain open. An initial cold launch was black; later launches rendered with and without the menu, so an overlay cause was not established. |
+| Terminator Salvation | Native launch/menu-resume passed. Virtual P1/P2 input, full aim sweeps and button press/release isolation passed. The replay advanced through mission selection into the cinematic and mission briefing. | In-level shots, grenade and magazine/pump reload effects were not established by the captured scenes. |
+| Terminator 2: Judgment Day, MAME | Native launch, menu/resume and cleanup passed. | Actual game-specific action effects, independent players and physical tracking. |
+
+The automatic TeknoParrot setup now detects stale `Use Relative Input` settings
+and turns them off for assigned RS3 Reaper, Sinden, XGunner and Blamcon profiles
+that provide that vendor field. This correction ran through the real House of
+the Dead 4 launch path. It does not invent settings in profiles that lack the
+field or alter the relative setting without an assigned supported gun.
+
+The Dolphin input lab uses a separate emulator user directory, copies only
+configuration INIs, redirects write paths and never copies original saves or
+discs. Original configuration hashes and the library were unchanged after the
+replays. Its title recognizer is experimental and rejects scenes it cannot
+identify rather than marking boot input as working gameplay.
+
+Vendor guidance checked during diagnosis: [Dolphin accuracy profiles](https://github.com/ProfgLX/Dolphin-Lightguns-Accuracy-Inis),
+[DemulShooter Windows game setup](https://github.com/argonlefou/DemulShooter/wiki/Windows-games),
+[HOTD III Arcade Mod](https://github.com/argonlefou/Hotd3pc_ArcadeMod) and
+[HOTD Remake Arcade Plugin](https://github.com/argonlefou/HotdRemake_ArcadePlugin).
+No replacement commercial game executable was downloaded or installed during
+these checks.
+
 ## What the checks establish
 
 A native launch check exercises the real session owner, foreground handling,

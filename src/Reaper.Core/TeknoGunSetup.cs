@@ -10,6 +10,7 @@ public static class TeknoGunSetup
     }
     // Only controls explicitly named by the selected profile are changed.
     // Special controls such as pedals, weapon selectors or two-stage triggers retain their vendor bindings.
+    public static bool AbsoluteAim(GunBinding binding)=>binding.SystemId is "rs3" or "sinden" or "xgunner" or "blamcon";
     public static int Configure(GameEntry game,IEnumerable<GunBinding> players)
     {
         if(game.Source!="teknoparrot"||!File.Exists(game.SourcePath)) return 0;
@@ -25,6 +26,13 @@ public static class TeknoGunSetup
             Set(row,"BindNameRi","");Set(row,"BindName","");
         }
         var active=players.Where(p=>p.Player is 1 or 2).ToArray();
+        // Managed IR guns supply absolute screen positions. A stale relative
+        // mouse preset otherwise makes aiming drift or stop short of the edges.
+        if(active.Length>0&&active.All(AbsoluteAim))
+        {
+            var relative=document.Descendants("FieldInformation").FirstOrDefault(f=>f.Element("FieldName")?.Value=="Use Relative Input");
+            if(relative is not null)Set(relative,"FieldValue","0");
+        }
         foreach(var row in document.Descendants("JoystickButtons").ToArray())
         {
             var name=row.Element("ButtonName")?.Value??"";

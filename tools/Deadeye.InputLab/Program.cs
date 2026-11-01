@@ -20,8 +20,9 @@ using Reaper.Windows;
 namespace Deadeye.InputLab;
 
 // An opt-in diagnostic consumer of the real launch path. It never saves LibraryState.
-internal static class Program
+internal static partial class Program
 {
+    private static int? requestedHoldMilliseconds;
     private static readonly ConcurrentQueue<RawPacket> packets = new();
     private static readonly ConcurrentQueue<(RawPacket Packet,long Time)> timed = new();
     private static readonly List<object> evidence = [];
@@ -39,6 +40,10 @@ internal static class Program
     {
         try
         {
+            if(args is ["read-scene",var imagePath])
+            {
+                Console.WriteLine(Task.Run(()=>DolphinSceneText(Path.GetFullPath(imagePath))).GetAwaiter().GetResult());return 0;
+            }
             if(args.Length>0 && args[0]=="capture")
             {
                 // Read-only capture also works for games without a replay adapter.
@@ -65,11 +70,22 @@ internal static class Program
                     ||!SceneSignals("Dress to start").Ready||!SceneSignals("Dress to stort").Ready
                     ||!SceneSignals("INSERT CREDITS").Ready
                     ||SceneSignals("").Ready||SceneSignals("Loading audio systems 30% FREEPLAY").Ready
-                    ||SceneSignals("NO GVRIO CARD FOUND").Ready)throw new IOException("Scene signal regression failed.");
-                Console.WriteLine("Scene signal checks passed (eight recorded and negative cases).");return 0;
+                    ||SceneSignals("NO GVRIO CARD FOUND").Ready
+                    ||!DolphinReadyText("DEAD SPACE EXTRACTION 2009 Electronic Arts Inc. All Rights Reserved.")
+                    ||!DolphinReadyText("HOUSE OF THE DEAD OVERKILL Press A Button")
+                    ||!DolphinReadyText("Story Mode Challenge Mode Options")
+                    ||DolphinReadyText("Wii Zapper Use Press A")||DolphinReadyText("Loading Press A or B to Start")
+                    ||DolphinReadyText("OVERKILL The capability to obliterate a target with more weapons than required"))throw new IOException("Scene signal regression failed.");
+                Console.WriteLine("Scene signal checks passed (eight arcade and six Dolphin cases).");return 0;
             }
             if(args.Length < 2 || args[0] is not ("plan" or "run"))
-                throw new ArgumentException("Usage: Deadeye.InputLab plan|run GAME_ID [--data DIR] [--output DIR] [--install-driver] [--input-route-probe] [--windowed-probe]; capture --output DIR");
+                throw new ArgumentException("Usage: Deadeye.InputLab plan|run GAME_ID [--data DIR] [--output DIR] [--install-driver] [--input-route-probe] [--windowed-probe] [--hold-ms 50..2000]; capture --output DIR; read-scene IMAGE");
+            if(Option(args,"--hold-ms") is {} hold)
+            {
+                if(!int.TryParse(hold,out int milliseconds)||milliseconds is <50 or >2000)
+                    throw new ArgumentException("--hold-ms must be between 50 and 2000 milliseconds.");
+                requestedHoldMilliseconds=milliseconds;
+            }
             string data = Option(args,"--data") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"ReaperArcade");
             output = Path.GetFullPath(Option(args,"--output") ?? Path.Combine(data,"input-lab",DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")));
             var library = new LibraryStore(data).Load();
@@ -77,19 +93,30 @@ internal static class Program
             if(args[0]=="plan")
             {
                 Console.WriteLine(JsonSerializer.Serialize(new { game.Id,game.Title,
-                    backend=game.Source=="teknoparrot"?"virtual-absolute-hid":"not-yet-supported",
+                    backend=game.Source=="teknoparrot"?"virtual-absolute-hid":SupportsDolphinReplay(game)?"isolated-dolphin-dsu":"not-yet-supported",
                     controls=OverlayControls.Read(game,data,library.Bindings),
                     note="A plan reads configuration only. It does not install a driver or verify gameplay." },json));
                 return 0;
             }
-            if(game.Source!="teknoparrot" || (game.Helpers??[]).Length!=0)
-                throw new NotSupportedException("This pilot runs direct TeknoParrot profiles only. Helper and other emulator adapters need a reviewed restore recipe.");
-            var selectedProfile=XDocument.Load(game.SourcePath);
-            string? Setting(string name)=>selectedProfile.Descendants("FieldInformation").FirstOrDefault(f=>f.Element("CategoryName")?.Value=="General"&&f.Element("FieldName")?.Value==name)?.Element("FieldValue")?.Value;
-            if(Setting("Input API")!="RawInput"||Setting("Use Relative Input")=="1")
-                throw new NotSupportedException("This adapter requires an absolute RawInput profile. Other input APIs need their own replay adapter.");
-            if(selectedProfile.Root?.Element("EmulationProfile")?.Value is "PrimevalHunt" or "Hotd4ex")
-                throw new NotSupportedException("This profile can prepare shared loader libraries and requires an extended restoration recipe before replay.");
+            bool dolphin=DolphinSetup.IsDolphin(game);
+            if(dolphin)
+            {
+                if(!SupportsDolphinReplay(game))
+                    throw new NotSupportedException("The isolated Dolphin replay currently covers Extraction and Overkill without external helpers.");
+                if(args.Contains("--input-route-probe")||args.Contains("--windowed-probe"))
+                    throw new NotSupportedException("TeknoParrot comparison flags do not apply to Dolphin.");
+            }
+            else
+            {
+                if(game.Source!="teknoparrot" || (game.Helpers??[]).Length!=0)
+                    throw new NotSupportedException("This pilot runs direct TeknoParrot profiles or isolated Extraction/Overkill Dolphin profiles only.");
+                var selectedProfile=XDocument.Load(game.SourcePath);
+                string? Setting(string name)=>selectedProfile.Descendants("FieldInformation").FirstOrDefault(f=>f.Element("CategoryName")?.Value=="General"&&f.Element("FieldName")?.Value==name)?.Element("FieldValue")?.Value;
+                if(Setting("Input API")!="RawInput"||Setting("Use Relative Input")=="1")
+                    throw new NotSupportedException("This adapter requires an absolute RawInput profile. Other input APIs need their own replay adapter.");
+                if(selectedProfile.Root?.Element("EmulationProfile")?.Value is "PrimevalHunt" or "Hotd4ex")
+                    throw new NotSupportedException("This profile can prepare shared loader libraries and requires an extended restoration recipe before replay.");
+            }
             if(library.Bindings.Count(b=>b.Player is 1 or 2)!=2)
                 throw new InvalidOperationException("Assign two real gun profiles first; the lab reuses their actual learned buttons without changing the library.");
             using var mutex = new Mutex(true,"Local\\ReaperArcade-v1",out bool first);
@@ -112,7 +139,7 @@ internal static class Program
                 try { await Run(game,data,library.Bindings,args.Contains("--install-driver"),args.Contains("--windowed-probe"),args.Contains("--input-route-probe"));exit=0; }
                 catch(Exception e) { evidence.Add(new {stage="error",error=e.ToString()});Console.Error.WriteLine(e.Message); }
                 finally {File.WriteAllText(Path.Combine(output,"report.json"),JsonSerializer.Serialize(new {
-                    game.Id,game.Title,time=DateTimeOffset.Now,exit,evidence,gameplayVerified=false,
+                    game.Id,game.Title,time=DateTimeOffset.Now,exit,evidence,gameplayVerified=false,requestedHoldMilliseconds,
                     toolVersion=typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion,toolHash=Hash(typeof(Program).Assembly.Location),
                     captureBackend="dxgi-desktop-duplication",verificationLevel=args.Contains("--input-route-probe")?"emulator-input-route":"raw-input-and-scene-captures",
                     verdict="Input delivery and scene captures are recorded separately. Screenshots require game-specific review; this report is not an all-buttons gameplay certificate."
@@ -181,6 +208,8 @@ internal static class Program
         Console.WriteLine("Two independent mouse and keyboard pairs are ready");
         cancel.CancelAfter(TimeSpan.FromMinutes(5));
         string libraryFile=Path.Combine(data,"library.json"),libraryHash=Hash(libraryFile);
+        if(DolphinSetup.IsDolphin(game))
+        {await ReplayDolphin(game,data,players,controllers,libraryFile,libraryHash);return;}
         string backup=Path.Combine(output,"profile-before.xml");File.Copy(game.SourcePath,backup,false);
         string? preparedHash=null;
         File.WriteAllText(Path.Combine(output,"restore.json"),JsonSerializer.Serialize(new {path=game.SourcePath,backup,beforeHash=Hash(backup),preparedHash},json));
@@ -280,9 +309,9 @@ internal static class Program
                 }
                 evidence.Add(new {stage="after-menu-warmup",frame=Capture(session,"after-menu-warmup"),note="Scene requires visual review."});
             }
-            if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath) is "AliensExtermination" or "JurassicPark")
+            if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath) is "AliensExtermination" or "JurassicPark" or "Terminator" or "WalkingDead")
             {
-                // Both reviewed titles have a 30-second mission vote. Let it
+                // These reviewed titles have a 30-second mission vote. Let it
                 // finish before treating weapon actions as in-level observations.
                 evidence.Add(new {stage="mission-warmup",seconds=35,note="Allow the reviewed mission-selection timer to finish, then dismiss the briefing with each player's mapped trigger."});
                 await Delay(35000);RequireGame(session);
@@ -393,7 +422,7 @@ internal static class Program
         int p=int.Parse(match.Groups[1].Value),code=int.Parse(match.Groups[3].Value);bool mouse=match.Groups[2].Value=="mouse";
         if(!mouse&&code is 27 or 91 or 92 or 0x73 or 0x79 or 0x7b){evidence.Add(new{stage="action",row.Player,row.Function,status="reserved-system-or-exit-key"});return;}
         string before=Capture(session,$"p{p}-{row.SourceKey}-before");var gameBefore=gameObservation?.Sample();var pipeBefore=pipe?.Sample();AliensSample? gameHeld=null;PipeSample? pipeHeld=null;string? heldFrame=null;Drain();
-        try{Send(devices[p-1],mouse,code,true);await Delay(150);gameHeld=gameObservation?.Sample();pipeHeld=pipe?.Sample();heldFrame=Capture(session,$"p{p}-{row.SourceKey}-held");}
+        try{Send(devices[p-1],mouse,code,true);await Delay(requestedHoldMilliseconds??150);gameHeld=gameObservation?.Sample();pipeHeld=pipe?.Sample();heldFrame=Capture(session,$"p{p}-{row.SourceKey}-held");}
         finally{Send(devices[p-1],mouse,code,false);}
         await Delay(300);var received=Drain();string id=mouse?players[p-1].MouseId:players[p-1].KeyboardId!;
         bool down=received.Any(r=>r.DeviceId==id&&(mouse?(r.Buttons&(1<<((code-1)*2)))!=0:r.Key==code&&r.Down));
