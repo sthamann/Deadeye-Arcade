@@ -97,3 +97,16 @@ Unused generic A/B/C or D-pad bindings no longer create false missing-action or
 shared-key warnings. A missing Reload entry and a genuinely shared Start key
 still require action. Core/content overrides and physical game response remain
 separate checks.
+
+## Classic HOTD III fullscreen hang
+
+The `hod3-presentation` rule is limited to the reviewed installed game executable
+and the Arcade Mod launch path. An isolated native comparison froze with the
+mod's `Fullscreen:1`, then passed renderer response, menu/resume and cleanup
+with only that value changed to `0`.
+
+Deadeye retains `Hod3Arcade.ini.before-deadeye-presentation`, switches that known
+build to windowed rendering and uses its existing borderless renderer handling
+to fill the physical monitor. Unknown executable versions are preserved. This
+repairs presentation; independent shots, reloads and other game actions still
+need their own verification. No replacement game executable is installed.

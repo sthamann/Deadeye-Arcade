@@ -14,7 +14,7 @@ public record FixPackage(string Id, string Url, string Sha256, int MaxBytes);
 // Reviewed rules only: the catalog cannot contain scripts, executable commands or arbitrary downloads.
 public static class KnownFixes
 {
-    public const int Version = 3;
+    public const int Version = 4;
     public static FixRule[] Catalog { get; } = LoadCatalog();
     public static readonly FixPackage OpenAl = new("openal-soft-1.25.2",
         "https://openal-soft.org/openal-binaries/openal-soft-1.25.2-bin.zip",
@@ -57,6 +57,8 @@ public static class KnownFixes
                 }
                 if (EmulatorSetup.ConfigurePaths(game))
                     Add(game, "portable-paths", "repaired", "Emulatorpfade oder Hersteller-Metadaten mit Sicherung repariert.", [game.Source == "teknoparrot" ? game.SourcePath : Path.GetFileName(game.Executable).StartsWith("pcsx2",StringComparison.OrdinalIgnoreCase) ? Path.Combine(game.WorkingDirectory,"inis","PCSX2.ini") : Path.Combine(game.WorkingDirectory,"EMULATOR.INI")]);
+                if(Hod3Presentation.Configure(game))
+                    Add(game,"hod3-presentation","repaired","Den hängenden exklusiven Vollbildmodus der geprüften HOTD-III-Version durch randloses Vollbild ersetzt.",[Hod3Presentation.ConfigPath(game),Hod3Presentation.ConfigPath(game)+".before-deadeye-presentation"]);
                 foreach (var issue in LaunchRules.Issues(game))
                     Add(game, "missing-files", "needs-action", issue, []);
                 if (game.Source == "teknoparrot" && File.Exists(game.SourcePath))

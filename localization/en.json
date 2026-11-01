@@ -989,5 +989,7 @@
   "Schießen": "Shoot",
   "Zusatzaktion": "Secondary action",
   "Optionaler Test. Du kannst jederzeit abbrechen und Spiele starten.": "Optional test. You can leave at any time and launch games.",
-  "Relative Mauseingabe ist für diese absolute Lightgun aktiviert. Beim Spielstart wird das Profil korrigiert.": "Relative mouse input is enabled for this absolute lightgun. Launching the game repairs this profile."
+  "Relative Mauseingabe ist für diese absolute Lightgun aktiviert. Beim Spielstart wird das Profil korrigiert.": "Relative mouse input is enabled for this absolute lightgun. Launching the game repairs this profile.",
+  "HOTD III Vollbildmodus": "HOTD III fullscreen mode",
+  "Den hängenden exklusiven Vollbildmodus der geprüften HOTD-III-Version durch randloses Vollbild ersetzt.": "Replaced the unresponsive exclusive fullscreen mode of the reviewed HOTD III build with borderless fullscreen."
 }

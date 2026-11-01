@@ -1,5 +1,6 @@
-Correct Saturn control audits and improve the optional Terminator replay recipe.
+Fix the confirmed classic HOTD III fullscreen hang and retain the Saturn input audit corrections.
 
-- Read only Trigger, Reload and Start for reviewed Beetle Saturn lightgun ports. Ignore unused generic bindings when checking missing controls and shared-key conflicts. Deleted required actions and a real shared Start key still fail the audit.
-- Improve the optional Terminator Salvation replay recipe to use the mapped Reload button to skip its reviewed cinematic and allow the briefing to complete. Intro navigation remains separate from gameplay-action verification.
-- Retain conservative verification for core overrides, physical guns and complete game actions. A successful launch or received packet does not certify all gameplay controls.
+- Detect the reviewed installed HOTD III executable and Arcade Mod configuration. Back up the existing settings, disable its hanging exclusive fullscreen mode and present the owned renderer through Deadeye's existing borderless fullscreen path.
+- Keep unknown executable versions and unrelated games unchanged. The rule records its configuration changes in Automatic repairs; it does not download or replace game binaries.
+- Retain the corrected Beetle Saturn Trigger/Reload/Start audit, including detection of missing required actions and real shared-key conflicts.
+- The updated optional Terminator replay reaches an active two-player mission. Reviewed frames show independent shots and reloads for both players; grenade effects and physical tracking remain separate checks.

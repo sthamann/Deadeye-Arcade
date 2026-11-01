@@ -592,6 +592,12 @@ RButton::y
     string saturnProfile=RetroArchSetup.ProfilePath(saturnRa,root);
     File.WriteAllLines(saturnProfile,File.ReadAllLines(saturnProfile).Where(l=>!l.StartsWith("input_player1_gun_reload")));
     Check(GameControlAudit.Read(saturnRa,root,[p1,p2]).Players.Single(p=>p.Player==1).Status=="needs-action","Removing every Saturn reload entry remains a required-action failure");
+    const string exclusiveHod3="[Game options]\r\nFullscreen:1\r\nResolution:2\r\nP1Controls:0\r\n";
+    string borderlessHod3=Hod3Presentation.WindowedConfig(exclusiveHod3,Hod3Presentation.AffectedExecutableMd5);
+    Check(borderlessHod3==exclusiveHod3.Replace("Fullscreen:1","Fullscreen:0"),"The reviewed HOTD III build changes only the exclusive fullscreen flag");
+    Check(Hod3Presentation.WindowedConfig(exclusiveHod3,"another-build")==exclusiveHod3,"Unknown HOTD III executable versions retain their presentation settings");
+    Check(Hod3Presentation.WindowedConfig(borderlessHod3,Hod3Presentation.AffectedExecutableMd5)==borderlessHod3,"Windowed HOTD III configuration remains stable across repeated setup");
+    Check(!Hod3Presentation.Supports(saturnRa),"The HOTD III presentation repair cannot target another emulator");
     var fixedEstate=raGame with {Title="Blue Estate",WorkingDirectory=raRoot};File.WriteAllText(Path.Combine(raRoot,"BlueEstate_Fix.dll"),"installed fixture");
     Check(GameGunProfiles.Vyper(fixedEstate,vyper).PedalMode=="right" && GameGunProfiles.Vyper(raGame,vyper).PedalMode=="assignable" && vyper.Blamcon!.PedalMode=="assignable","Fixed-mouse Blue Estate temporarily routes Vyper magazine to right mouse while preserving the saved menu configuration");
     Check(StartupControls.Hardware(GameGunProfiles.ForGame(fixedEstate,vyper)).Single(h=>h.Id=="magazine").Token=="mouse:2" && StartupControls.Hardware(vyper).Single(h=>h.Id=="magazine").Token=="key:82","Fixed-mouse game legends reflect the temporary magazine route without changing stored physical controls");

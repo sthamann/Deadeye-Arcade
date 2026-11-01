@@ -150,5 +150,13 @@
     "scope": "Original x86 Windows HOD2.EXE importing DirectDraw",
     "source": "https://github.com/narzoul/DDrawCompat/issues/445",
     "verification": "Pinned official 0.7.2 archive and DLL hashes; existing unknown wrappers retained; per-game HAL setting backed up and fingerprinted. Native launch validated; physical gameplay remains separate."
+  },
+  {
+    "id": "hod3-presentation",
+    "name": "HOTD III Vollbildmodus",
+    "mode": "automatic",
+    "scope": "Reviewed classic Windows HOTD III executable with Arcade Mod",
+    "source": "https://github.com/sthamann/deadeye-arcade",
+    "verification": "Exact installed executable fingerprint; exclusive fullscreen off with configuration backup; owned game renderer expanded through existing borderless presentation. Input gameplay remains separate."
   }
 ]
