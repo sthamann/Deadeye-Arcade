@@ -25,9 +25,9 @@ internal static class GamePresentation
                 DolphinSetup.WriteMerged(path,"Input",new Dictionary<string,string>{["XInput"]="0"});
         }
     }
-    public static void Apply(GameEntry game,nint window)
+    public static void Apply(GameEntry game,nint window,bool nativeSizedWindow=false)
     {
-        if(!TeknoDisplaySetup.Supports(game) && !IsModel2(game) && !Hod3Presentation.Supports(game)) return;
+        if(!nativeSizedWindow && !TeknoDisplaySetup.Supports(game) && !IsModel2(game) && !Hod3Presentation.Supports(game)) return;
         var info=new MonitorInfo {Size=Marshal.SizeOf<MonitorInfo>()};
         if(!GetMonitorInfo(MonitorFromWindow(window,2),ref info)) return;
         SetWindowLongPtr(window,-16,GetWindowLongPtr(window,-16)&~(nint)0x00cf0000);

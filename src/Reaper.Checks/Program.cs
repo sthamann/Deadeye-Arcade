@@ -1004,6 +1004,16 @@ RButton::y
     relativeAliens.Root!.Element("ConfigValues")!.Add(new XElement("FieldInformation",new XElement("CategoryName","General"),new XElement("FieldName","Use Relative Input"),new XElement("FieldValue","1")));
     relativeAliens.Save(alienProfile);TeknoDisplaySetup.Configure(aliens,3840,2160);
     Check(XDocument.Load(alienProfile).Descendants("FieldInformation").Single(f=>f.Element("FieldName")?.Value=="Windowed").Element("FieldValue")?.Value=="1","Relative Aliens input retains the windowed route and its existing resolution");
+    string exDisplayProfile=Path.Combine(root,"ex-display.xml");
+    void ExDisplayProfile(string profile,string loader,string executable)=>File.WriteAllText(exDisplayProfile,new XElement("GameProfile",new XElement("EmulationProfile",profile),new XElement("EmulatorType",loader),new XElement("ExecutableName",executable),new XElement("JoystickButtons","keep-p1-and-p2"),new XElement("ConfigValues",new XElement("FieldInformation",new XElement("CategoryName","General"),new XElement("FieldName","DisplayMode"),new XElement("FieldValue","Fullscreen Windowed")),new XElement("FieldInformation",new XElement("CategoryName","General"),new XElement("FieldName","FreePlay"),new XElement("FieldValue","1")))).ToString());
+    var exDisplayGame=repair with {SourcePath=exDisplayProfile};
+    ExDisplayProfile("Hotd4ex","ElfLdr2","hodexRI.elf");
+    Check(LindberghPresentation.Supports(exDisplayGame)&&LindberghPresentation.Configure(exDisplayGame)&&File.Exists(exDisplayProfile+".before-deadeye-native-display"),"Reviewed HOTD EX uses its fixed native viewport and backs up the previous display route");
+    var exDisplayXml=XDocument.Load(exDisplayProfile);
+    Check(exDisplayXml.Descendants("FieldValue").Select(e=>e.Value).SequenceEqual(new[]{"Windowed","1"})&&exDisplayXml.Root!.Element("JoystickButtons")!.Value=="keep-p1-and-p2"&&!LindberghPresentation.Configure(exDisplayGame),"Repeated EX presentation setup retains both players' controls and unrelated settings");
+    ExDisplayProfile("Hotd4sp","ElfLdr2","hod4M.elf");Check(!LindberghPresentation.Configure(exDisplayGame),"Special and other Lindbergh games do not inherit the EX-only native mode");
+    ExDisplayProfile("Hotd4ex","Lindbergh","hodexRI.elf");Check(!LindberghPresentation.Configure(exDisplayGame),"Legacy loaders retain their own display setup");
+    ExDisplayProfile("Hotd4ex","ElfLdr2","different.elf");Check(!LindberghPresentation.Configure(exDisplayGame)&&!LindberghPresentation.Supports(exDisplayGame with{Source="pc"}),"A different executable or launch adapter cannot trigger the native-display rule");
     Throws(() => GunSystems.ValidateMap(new() { ["mouse:99"] = "shoot" }), "Binding rejects invalid physical inputs");
     Throws(() => GunSystems.ValidateMap(new() { ["key:49"] = "delete-all" }), "Binding rejects unsupported actions");
     Check(GunSystems.ReaperConfiguration(new(OffscreenReload:false, Aspect:"4:3")).SequenceEqual(new[] {"ZS", "ZM", "ZN", "ZB", "ZX"}), "RS3 configuration applies aspect and reload and exits external mode without firing recoil");

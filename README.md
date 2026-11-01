@@ -134,6 +134,7 @@ startup reference shows the resulting profile and any unresolved controls.
 | Recognized multiplayer extensions | Configures matching installed integrations, including supported Blue Estate and HOTD 2: Remake paths. |
 | Missing runtimes or support files | Inspects known dependencies and prepares matching reviewed official packages. Microsoft installers are checked for architecture and signature. |
 | Linux arcade loaders and Unicode paths | Creates a physical ASCII game copy when required, preserves originals and reuses the prepared copy. Lindbergh copies retain the `elf`, `fs` and `drv` layout. Existing settings and progress survive an upgrade from an earlier flattened copy; source updates continue to propagate. |
+| HOTD EX presentation | On a single physical display, uses the supported native 1360 × 768 mode at 60 Hz for the game session. Keeps the menu visible, retains the full game image after resume and restores the previous desktop mode when the session ends. Saved Windows display settings stay intact. |
 | Old HOTD 4 Special loader | Uses the matching installed ElfLdr2 vendor template while preserving saved controls and settings. |
 | Reviewed classic HOTD III fullscreen hang | Backs up the mod configuration, replaces the affected executable's exclusive fullscreen mode with windowed rendering and fills the monitor through borderless presentation. |
 | Beetle Saturn lightgun warnings | Reads Trigger, Reload and Start from the active gun ports, ignores unused generic buttons and still flags missing required actions or real shared-key conflicts. |

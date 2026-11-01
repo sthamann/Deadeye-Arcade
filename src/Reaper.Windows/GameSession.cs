@@ -242,6 +242,7 @@ public sealed class GameSession
         LocalRuntimeSetup.Configure(game);
         KnownFixes.RecordChanges(game, dataDirectory, "local-loader-libs", beforeLibraries, libraries);
         TeknoGunSetup.Configure(game,bindings);
+        using var nativeDisplay=NativeDisplayScope.Begin(game,dataDirectory);
         GamePresentation.Prepare(game);
         KnownFixes.RecordChanges(game, dataDirectory, "game-profile", beforeProfile, profileFiles);
         ProfilePrepared?.Invoke();
@@ -361,7 +362,7 @@ public sealed class GameSession
                                 if(IsGameRuntime(candidate,game,target,process.Id)) {readyWindow=handle;break;}
                             } catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
                         if(windows.Observe(readyWindow.ToInt64(),Environment.TickCount64)) {
-                            gameWindow=readyWindow;GamePresentation.Apply(game,readyWindow);
+                            gameWindow=readyWindow;GamePresentation.Apply(game,readyWindow,nativeDisplay is not null);
                             // Aliens' TeknoParrot status window can remain ahead of
                             // the GLUT renderer. Minimize only this session's own
                             // non-modal launcher after the renderer is ready.

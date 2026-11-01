@@ -1,7 +1,10 @@
-Preserve complete Lindbergh game data when preparing paths without special characters.
+Keep HOTD EX full screen when opening and resuming the in-game menu.
 
-- Keep the relative `elf`, `fs` and `drv` directory layout instead of copying only the ELF executable folder.
-- Upgrade earlier flattened copies while retaining modified player settings and game-created saves, including extensionless save files. Keep original game files and use their current executable data.
-- Repeated launches preserve newer progress and continue to propagate source updates.
-- Refresh old HOTD 4 Special loader metadata from the matching installed ElfLdr2 template, retaining bindings and user settings. Missing replacement templates or a different game executable leave the existing loader unchanged.
-- Six new core regressions cover sibling assets, upgrading an existing prepared path and keeping newer progress across repeated preparation. Native observations and remaining game-specific failures are tracked separately in the game-check guide.
+- Use the reviewed renderer's native 1360 × 768, 60 Hz mode for the game session on a supported single physical display.
+- Back up its display profile and use borderless windowed presentation so the game menu remains visible without shrinking the resumed image.
+- Restore the previous desktop mode when the owned game session ends. Keep saved Windows display settings unchanged and record restoration results.
+- Preserve other games, Remote Desktop sessions, multiple-display setups, both players' controls and unrelated profile settings.
+- Exercise the actual Resume command during native menu tests rather than closing the test window directly.
+- Keep complete Lindbergh `elf`, `fs` and `drv` data and the matching installed HOTD 4 Special loader metadata during automatic setup.
+
+Presentation, virtual input delivery and physical gun gameplay remain separate verification results.

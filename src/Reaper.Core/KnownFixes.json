@@ -158,5 +158,13 @@
     "scope": "Reviewed classic Windows HOTD III executable with Arcade Mod",
     "source": "https://github.com/sthamann/deadeye-arcade",
     "verification": "Exact installed executable fingerprint; exclusive fullscreen off with configuration backup; owned game renderer expanded through existing borderless presentation. Input gameplay remains separate."
+  },
+  {
+    "id": "hotdex-native-display",
+    "name": "HOTD EX · 1360 × 768 · 60 Hz",
+    "mode": "launch-time",
+    "scope": "Reviewed Hotd4ex ElfLdr2 profile, single physical Windows output with a supported 1360 x 768, 60 Hz mode",
+    "source": "https://github.com/sthamann/deadeye-arcade",
+    "verification": "Temporarily select the native viewport, retain the saved desktop mode and restore the original current mode on session disposal. Back up the windowed profile. Other games, remote sessions and multiple displays are excluded. Presentation evidence does not certify aiming or shots."
   }
 ]

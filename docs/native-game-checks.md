@@ -112,26 +112,33 @@ change; existing display behavior and installed multiplayer patches are preserve
 
 ## Published package verification
 
-The [0.3.66 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.66)
-passed [764 Windows core checks and fourteen scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41332439795).
+The [0.3.67 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.67)
+passed [770 Windows core checks and fourteen scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41336559170).
 The installer and optional Input Lab archive were checked against their published
 SHA-256 digests before installation. The installed version matched release commit
-`61dc17fb1870cefe4eb582684a10de71baac170a`.
+`8b30b84100db8edaf90c58b48842cb96b5603d67`.
 
-The installed package was then tested after deliberately restoring only the old
-HOTD III exclusive-fullscreen flag. Its ordinary automatic repair changed the
-flag back, retained the original backup and recorded `hod3-presentation` as
-repaired. The native game passed renderer response, foreground, menu/resume and
-owned process cleanup during a bounded 60-second check. GPU captures show the
-rendered game filling the physical display without window chrome. The observed
-window style also had the standard window frame flags removed.
+Both existing Lindbergh entries passed bounded native launch, renderer response,
+foreground, menu/resume and cleanup checks through the automatic setup. The
+prepared data retained `elf`, `fs` and `drv`; the existing Special entry used the
+matching installed ElfLdr2 metadata without changing its library identity.
 
-The separate Terminator replay reached an active two-player mission. Reviewed
-before/held/after images establish independent ammunition reductions from 60 to
-57 and reloads from 57 to 60 for each player. Grenade effects, confirmed hits,
-physical tracking and complete playthroughs remain unverified.
+Both virtual-input replays passed independent aim packets, press/release delivery
+and isolation checks. EX Start reached Chapter 1 and its introduction. Special
+left the cabinet ride-reset prompt and reached gameplay advice; later action
+frames still showed a Hold Your Fire scene. These observations do not establish
+weapon effects, successful hits or complete independent two-player gameplay.
+
+Follow-up EX comparisons isolated a fixed-viewport presentation issue. Enlarging
+the window at 4K retained a small image after menu activation; a process-only DPI
+comparison did not correct it. Windowed rendering at the supported native
+1360 x 768, 60 Hz mode showed a visible menu and a full image after its actual
+Resume command. The automatic candidate reproduced both images without external
+window resizing or mode changes and restored the previous 4K, 60 Hz desktop.
+The new native-display rule applies only to EX; Special presentation remains
+open and is not covered by this comparison.
 
 The library hash remained unchanged, no virtual test device collections remained,
 and the frontend returned to foreground. Both current and saved desktop display
-modes were 3840 × 2160 at 60 Hz. These package checks add no physical-gun gameplay
-claim for HOTD III.
+modes were 3840 x 2160 at 60 Hz. The physical display and real gun tracking remain
+separate from virtual input delivery and bounded process checks.

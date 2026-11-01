@@ -112,3 +112,26 @@ build to windowed rendering and uses its existing borderless renderer handling
 to fill the physical monitor. Unknown executable versions are preserved. This
 repairs presentation; independent shots, reloads and other game actions still
 need their own verification. No replacement game executable is installed.
+
+
+## HOTD EX fixed viewport
+
+The `hotdex-native-display` launch rule matches the `Hotd4ex` ElfLdr2 profile
+and `hodexRI.elf` executable metadata. This renderer retains a fixed 1360 × 768
+viewport when its window is enlarged. Its fullscreen route can also lose the
+correct presentation when an activating game menu opens.
+
+On one physical Windows display offering a progressive 1360 × 768, 60 Hz mode
+with the current colour depth, Deadeye temporarily selects that mode, backs up
+the profile, uses windowed rendering and fills the monitor through the existing
+borderless presentation path. The original current mode is restored after the
+owned game processes stop, including cancellation and launch failure. No saved
+Windows display setting is changed. Mode selection and restoration results are
+recorded in `native-display-history.jsonl`; profile changes also retain their
+normal hashes in repair history.
+
+Remote Desktop and multiple-display sessions are excluded from automatic mode
+selection. A new Remote Desktop connection owns its own display; Deadeye leaves
+that connection untouched. Other Lindbergh profiles, including HOTD 4 Special,
+do not inherit this rule. Fullscreen/menu evidence does not certify independent
+aiming, successful shots or physical recoil.

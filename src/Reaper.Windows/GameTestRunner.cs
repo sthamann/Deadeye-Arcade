@@ -63,12 +63,16 @@ internal static class GameTestRunner
                     {
                         var bindings=state.Bindings.Select(b=>GameGunProfiles.ForGame(game,b)).ToArray();
                         session.HideForOverlay();
-                        overlay=new InGameOverlay(game,OverlayControls.Read(game,data,bindings,input.Devices),bindings,_=>{},session.GameWindow);
+                        overlay=new InGameOverlay(game,OverlayControls.Read(game,data,bindings,input.Devices),bindings,action=>
+                        {
+                            if(action!="resume")return;
+                            overlay?.Close();overlay=null;session.RestoreFromOverlay();overlayResumed=true;
+                        },session.GameWindow);
                         overlay.Show(); overlay.Arm(); overlayOpenedAt=elapsed.ElapsedMilliseconds;
                     }
                     else if (overlay is not null && elapsed.ElapsedMilliseconds-overlayOpenedAt >= 15_000)
                     {
-                        overlay.Close(); overlay=null; session.RestoreFromOverlay(); overlayResumed=true;
+                        overlay.Navigate("resume");
                     }
                 }
                 if(session.GameWindowAvailable && session.HasGameForeground())focusedSince??=elapsed.ElapsedMilliseconds;
