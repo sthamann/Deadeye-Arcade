@@ -35,9 +35,28 @@ public static class EmulatorSetup
         var vendor=System.Xml.Linq.XDocument.Load(vendorPath);
         if(user.Root is null || vendor.Root is null || string.IsNullOrWhiteSpace(user.Root.Element("EmulationProfile")?.Value)
             || user.Root.Element("EmulationProfile")?.Value!=vendor.Root.Element("EmulationProfile")?.Value)return false;
+        bool upgradedSpecial=false;
+        if(Path.GetFileNameWithoutExtension(game.SourcePath).Equals("HOTD4SP",StringComparison.OrdinalIgnoreCase) &&
+            user.Root.Element("EmulationProfile")?.Value=="Hotd4sp" && vendor.Root.Element("EmulatorType")?.Value=="Lindbergh")
+        {
+            string replacement=Path.Combine(Path.GetDirectoryName(vendorPath)!,"HOTD4SPELF2.xml");
+            if(File.Exists(replacement))
+            {
+                var candidate=System.Xml.Linq.XDocument.Load(replacement);
+                if(candidate.Root?.Element("EmulationProfile")?.Value=="Hotd4sp" &&
+                    candidate.Root.Element("EmulatorType")?.Value=="ElfLdr2" &&
+                    candidate.Root.Element("ExecutableName")?.Value=="hod4M.elf" &&
+                    candidate.Root.Element("ExecutableName")?.Value==vendor.Root.Element("ExecutableName")?.Value)
+                {vendor=candidate;upgradedSpecial=true;}
+            }
+        }
         // Command-line launches can bypass TeknoParrot's profile editor migration.
         // Use installed vendor eligibility/loader metadata; preserve user inputs.
         bool changed=false;
+        if(upgradedSpecial && vendor.Root?.Element("ConfigValues") is {} defaults && user.Root.Element("ConfigValues") is {} settings)
+            foreach(var field in defaults.Elements("FieldInformation"))
+                if(!settings.Elements("FieldInformation").Any(f=>f.Element("CategoryName")?.Value==field.Element("CategoryName")?.Value && f.Element("FieldName")?.Value==field.Element("FieldName")?.Value))
+                {settings.Add(new System.Xml.Linq.XElement(field));changed=true;}
         foreach(string name in new[]{"Patreon","EmulatorType","Is64Bit","RequiresAdmin","HasTwoExecutables","LaunchSecondExecutableFirst","ExecutableName2"})
         {
             var original=vendor.Root.Element(name);if(original is null)continue;

@@ -133,7 +133,8 @@ startup reference shows the resulting profile and any unresolved controls.
 | Supported Wii titles | Applies matching disc-region accuracy profiles and independent input bridge channels. |
 | Recognized multiplayer extensions | Configures matching installed integrations, including supported Blue Estate and HOTD 2: Remake paths. |
 | Missing runtimes or support files | Inspects known dependencies and prepares matching reviewed official packages. Microsoft installers are checked for architecture and signature. |
-| Linux arcade loaders and Unicode paths | Creates a physical ASCII game copy when required, preserves originals and reuses the prepared copy. Source updates propagate while unchanged player saves remain intact. |
+| Linux arcade loaders and Unicode paths | Creates a physical ASCII game copy when required, preserves originals and reuses the prepared copy. Lindbergh copies retain the `elf`, `fs` and `drv` layout. Existing settings and progress survive an upgrade from an earlier flattened copy; source updates continue to propagate. |
+| Old HOTD 4 Special loader | Uses the matching installed ElfLdr2 vendor template while preserving saved controls and settings. |
 | Reviewed classic HOTD III fullscreen hang | Backs up the mod configuration, replaces the affected executable's exclusive fullscreen mode with windowed rendering and fills the monitor through borderless presentation. |
 | Beetle Saturn lightgun warnings | Reads Trigger, Reload and Start from the active gun ports, ignores unused generic buttons and still flags missing required actions or real shared-key conflicts. |
 | Duplicate starts and lingering processes | Reserves a single session and supervises the owned game and helper processes. |

@@ -114,7 +114,10 @@ internal static partial class Program
                 string? Setting(string name)=>selectedProfile.Descendants("FieldInformation").FirstOrDefault(f=>f.Element("CategoryName")?.Value=="General"&&f.Element("FieldName")?.Value==name)?.Element("FieldValue")?.Value;
                 if(Setting("Input API")!="RawInput"||Setting("Use Relative Input")=="1")
                     throw new NotSupportedException("This adapter requires an absolute RawInput profile. Other input APIs need their own replay adapter.");
-                if(selectedProfile.Root?.Element("EmulationProfile")?.Value is "PrimevalHunt" or "Hotd4ex")
+                string? profileId=selectedProfile.Root?.Element("EmulationProfile")?.Value;
+                bool existingExLibraries=profileId=="Hotd4ex" && new[]{"librnalindbergh_jr.so","libcri_soundoutput_lindbergh_jr.so"}
+                    .All(name=>File.Exists(Path.Combine(Path.GetDirectoryName(game.Executable)!,"ElfLdr2","libs",name)));
+                if(profileId=="PrimevalHunt" || profileId=="Hotd4ex"&&!existingExLibraries)
                     throw new NotSupportedException("This profile can prepare shared loader libraries and requires an extended restoration recipe before replay.");
             }
             if(library.Bindings.Count(b=>b.Player is 1 or 2)!=2)
@@ -277,6 +280,16 @@ internal static partial class Program
                 for(int i=0;i<presses;i++)await Action(session,controllers,players,row);
             }
             await Delay(5000);
+            if(!routeProbe&&XDocument.Load(game.SourcePath).Root?.Element("EmulationProfile")?.Value=="Hotd4sp")
+            {
+                // The first Start resets the cabinet ride and begins a fresh
+                // boot/attract sequence. It does not start a playable mission.
+                evidence.Add(new {stage="hotd-special-boot",seconds=45,note="Wait for the observed post-reset boot sequence, then send the mapped cabinet Start again. Gameplay still requires frame review."});
+                await Delay(45000);RequireGame(session);
+                await Action(session,controllers,players,actions.First(r=>r.SourceKey=="P1ButtonStart"));
+                await Delay(10000);RequireGame(session);
+                evidence.Add(new {stage="hotd-special-after-start",frame=Capture(session,"hotd-special-after-start"),note="Review the resulting scene before accepting weapon actions."});
+            }
             if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath) is "HOTDSD" or "RaccoonRampage" or "TombRaider")
             {
                 string profile=Path.GetFileNameWithoutExtension(game.SourcePath);

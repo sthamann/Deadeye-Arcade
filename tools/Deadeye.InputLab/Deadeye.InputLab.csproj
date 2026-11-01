@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <Version>0.3.66</Version>
+    <Version>0.3.67</Version>
     <Product>Deadeye Input Lab</Product>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>

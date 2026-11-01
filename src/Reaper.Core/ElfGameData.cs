@@ -6,7 +6,7 @@ namespace Reaper.Core;
 
 // Some Linux games resolve junctions before opening their assets. An ASCII alias
 // still fails when the physical directory contains Unicode. Keep originals and
-// prepare real game data, including siblings of the common pm/game executable.
+// prepare real game data, including sibling assets of pm/game and elf/*.elf.
 public static class ElfGameData
 {
     private const string ManifestName = ".deadeye-game-source.json";
@@ -71,6 +71,16 @@ public static class ElfGameData
         if (name.Any(c => c >= 128)) throw new IOException("ElfLoader requires an executable name without special characters.");
         string source = Path.GetDirectoryName(physical)!;
         if (Path.GetFileName(source).Equals("pm", StringComparison.OrdinalIgnoreCase)) source = Path.GetDirectoryName(source)!;
+        string? oldElfCache = null;
+        if (Path.GetFileName(source).Equals("elf", StringComparison.OrdinalIgnoreCase) &&
+            Path.GetExtension(physical).Equals(".elf", StringComparison.OrdinalIgnoreCase) &&
+            Directory.Exists(Path.Combine(Path.GetDirectoryName(source)!, "fs")))
+        {
+            // Lindbergh executables open ../fs and ../drv. Flattening the elf
+            // directory into a cache separates the executable from its assets.
+            oldElfCache = Path.Combine(storageRoot, Key(source));
+            source = Path.GetDirectoryName(source)!;
+        }
         if (Inside(storageRoot, source) || storageRoot.Equals(source, Comparison)) throw new IOException("Prepared game storage must be outside the original game folder.");
         if (storageRoot.Any(c => c >= 128)) throw new IOException("Prepared ElfLoader storage requires a path without special characters.");
         Directory.CreateDirectory(storageRoot);
@@ -118,6 +128,26 @@ public static class ElfGameData
                 File.Move(copy, target, true);
             }
             finally { if (File.Exists(copy)) File.Delete(copy); }
+        }
+        if (previous is null && oldElfCache is not null && Directory.Exists(oldElfCache))
+        {
+            // Upgrade the earlier flattened cache once. Preserve settings and
+            // game-created files without carrying old executable copies forward.
+            var oldManifest = ReadManifest(Path.Combine(oldElfCache, ManifestName));
+            foreach (string oldPath in Directory.EnumerateFiles(oldElfCache, "*", SearchOption.AllDirectories))
+            {
+                var old = new FileInfo(oldPath);
+                string relative = Path.GetRelativePath(oldElfCache, oldPath);
+                if (old.Name.StartsWith(ManifestName, StringComparison.Ordinal) ||
+                    CodeFile(old) && (old.Extension.Length > 0 || oldManifest?.Files.ContainsKey(relative) == true)) continue;
+                if (old.LinkTarget is not null || !PhysicalDirectory(old.DirectoryName!).Equals(old.DirectoryName, Comparison)) throw new IOException("Prepared game data contains a link.");
+                if (oldManifest?.Files.TryGetValue(relative, out var stamp) == true && Describe(old, stamp.ContentHash is not null) == stamp) continue;
+                string target = Path.Combine(cache, "elf", relative);
+                EnsureDirectory(Path.GetDirectoryName(target)!);
+                if (new FileInfo(target).LinkTarget is not null) throw new IOException("Prepared game data contains a linked file.");
+                File.Copy(oldPath, target, true);
+                File.SetLastWriteTimeUtc(target, old.LastWriteTimeUtc);
+            }
         }
         // Retire only unchanged files previously owned by the source. Modified
         // saves and files created by the running game remain in place.

@@ -1067,6 +1067,16 @@ RButton::y
     var staleVendorGame=scarlet with {SourcePath=userProfile,Executable=Path.Combine(tpDirectory,"TeknoParrotUi.exe")};
     Check(EmulatorSetup.ConfigurePaths(staleVendorGame)&&File.ReadAllText(userProfile).Contains("<Patreon>false</Patreon>")&&XDocument.Load(userProfile).Root!.Element("JoystickButtons")!.Value=="keep-buttons"&&XDocument.Load(userProfile).Root!.Element("GamePath")!.Value=="keep-game","CLI launch refreshes stale eligibility from installed official metadata while preserving game paths and input settings");
     Check(!EmulatorSetup.ConfigurePaths(staleVendorGame)&&File.Exists(userProfile+".before-deadeye-vendor-fix"),"Vendor metadata repair is idempotent and retains the original profile backup");
+    string specialProfile=Path.Combine(tpDirectory,"UserProfiles","HOTD4SP.xml"),specialVendor=Path.Combine(tpDirectory,"GameProfiles","HOTD4SP.xml"),specialElf2=Path.Combine(tpDirectory,"GameProfiles","HOTD4SPELF2.xml");
+    Directory.CreateDirectory(Path.GetDirectoryName(specialProfile)!);
+    File.WriteAllText(specialProfile,"<GameProfile><EmulationProfile>Hotd4sp</EmulationProfile><EmulatorType>Lindbergh</EmulatorType><GamePath>keep-game</GamePath><ConfigValues><FieldInformation><CategoryName>General</CategoryName><FieldName>FreePlay</FieldName><FieldValue>0</FieldValue></FieldInformation></ConfigValues><JoystickButtons>keep-buttons</JoystickButtons></GameProfile>");
+    File.WriteAllText(specialVendor,"<GameProfile><EmulationProfile>Hotd4sp</EmulationProfile><EmulatorType>Lindbergh</EmulatorType><ExecutableName>hod4M.elf</ExecutableName></GameProfile>");
+    var specialGame=staleVendorGame with {SourcePath=specialProfile};
+    File.WriteAllText(specialElf2,"<GameProfile><EmulationProfile>wrong-game</EmulationProfile><EmulatorType>ElfLdr2</EmulatorType><ExecutableName>hod4M.elf</ExecutableName></GameProfile>");
+    Check(!EmulatorSetup.ConfigurePaths(specialGame),"An unrelated replacement template never changes the HOTD Special loader");
+    File.WriteAllText(specialElf2,"<GameProfile><EmulationProfile>Hotd4sp</EmulationProfile><EmulatorType>ElfLdr2</EmulatorType><ExecutableName>hod4M.elf</ExecutableName><ConfigValues><FieldInformation><CategoryName>General</CategoryName><FieldName>FreePlay</FieldName><FieldValue>1</FieldValue></FieldInformation><FieldInformation><CategoryName>General</CategoryName><FieldName>Framelimiter</FieldName><FieldValue>1</FieldValue></FieldInformation></ConfigValues></GameProfile>");
+    Check(EmulatorSetup.ConfigurePaths(specialGame)&&XDocument.Load(specialProfile).Root!.Element("EmulatorType")!.Value=="ElfLdr2"&&XDocument.Load(specialProfile).Root!.Element("JoystickButtons")!.Value=="keep-buttons"&&XDocument.Load(specialProfile).Root!.Element("GamePath")!.Value=="keep-game"&&XDocument.Load(specialProfile).Descendants("FieldValue").Select(v=>v.Value).SequenceEqual(new[]{"0","1"}),"HOTD Special uses its matching installed ElfLdr2 template, adds missing defaults and preserves user settings and controls");
+    Check(!EmulatorSetup.ConfigurePaths(specialGame)&&File.Exists(specialProfile+".before-deadeye-vendor-fix"),"HOTD Special loader migration is backed up and is not reverted on the next launch");
     string dualVendorMain=Path.Combine(tpDirectory,"game-main"),dualVendorSecond=Path.Combine(tpDirectory,"game-sound");
     File.WriteAllText(dualVendorMain,"");File.WriteAllText(dualVendorSecond,"");
     File.WriteAllText(userProfile,new XDocument(new XElement("GameProfile",new XElement("EmulationProfile","RawThrillsGUN"),new XElement("HasTwoExecutables",false),new XElement("LaunchSecondExecutableFirst",false),new XElement("GamePath",dualVendorMain),new XElement("GamePath2",Path.Combine(root,"missing-drive","game-sound")),new XElement("JoystickButtons","keep-buttons"))).ToString());
@@ -1136,6 +1146,20 @@ RButton::y
     }
     finally { if(new DirectoryInfo(elfAlias).LinkTarget is not null)Directory.Delete(elfAlias,false); }
     Check(File.Exists(elfOriginal)&&!Directory.Exists(elfAlias),"Fixture cleanup removes the junction before its source folder and preserves the original game data");
+    string lindbergh=Path.Combine(root,"Lindbergh — fixture"),lindberghElf=Path.Combine(lindbergh,"elf","hodexRI.elf");
+    Directory.CreateDirectory(Path.GetDirectoryName(lindberghElf)!);File.WriteAllText(lindberghElf,"original-elf");
+    File.WriteAllText(Path.Combine(lindbergh,"elf","settings.ini"),"default-settings");
+    string flatElf=ElfGameData.Prepare(lindberghElf,elfStorage),flatRoot=Path.GetDirectoryName(flatElf)!;
+    File.WriteAllText(Path.Combine(flatRoot,"settings.ini"),"player-settings");File.WriteAllText(Path.Combine(flatRoot,"progress.dat"),"player-progress");
+    File.WriteAllText(Path.Combine(flatRoot,"progress"),"extensionless-save");
+    File.WriteAllText(flatElf,"stale-cache-code");
+    Directory.CreateDirectory(Path.Combine(lindbergh,"fs"));Directory.CreateDirectory(Path.Combine(lindbergh,"drv"));
+    File.WriteAllText(Path.Combine(lindbergh,"fs","texture.bin"),"game-texture");
+    string completeElf=ElfGameData.Prepare(flatElf,elfStorage),completeRoot=Path.GetDirectoryName(Path.GetDirectoryName(completeElf))!;
+    Check(Path.GetFileName(Path.GetDirectoryName(completeElf))=="elf"&&File.ReadAllText(Path.Combine(completeRoot,"fs","texture.bin"))=="game-texture"&&Directory.Exists(Path.Combine(completeRoot,"drv")),"Lindbergh ELF preparation retains the relative elf, fs and drv layout");
+    Check(File.ReadAllText(Path.Combine(completeRoot,"elf","settings.ini"))=="player-settings"&&File.ReadAllText(Path.Combine(completeRoot,"elf","progress.dat"))=="player-progress"&&File.ReadAllText(Path.Combine(completeRoot,"elf","progress"))=="extensionless-save"&&File.ReadAllText(completeElf)=="original-elf","Upgrading a flattened ELF cache preserves player settings and progress while using original executable data");
+    File.WriteAllText(Path.Combine(completeRoot,"elf","progress.dat"),"new-progress");
+    Check(ElfGameData.Prepare(completeElf,elfStorage)==completeElf&&File.ReadAllText(Path.Combine(completeRoot,"elf","progress.dat"))=="new-progress"&&File.ReadAllText(lindberghElf)=="original-elf","Repeated complete ELF preparation keeps newer progress and original files unchanged");
     string dolphin = Path.Combine(root,"Dolphin.exe"); File.WriteAllText(dolphin, ""); File.WriteAllText(Path.Combine(root,"portable.txt"), "");
     Directory.CreateDirectory(Path.Combine(root,"User","Config")); File.WriteAllText(Path.Combine(root,"User","Config","WiimoteNew.ini"), "[Wiimote1]\nButtons/A = `Click 1`\nButtons/B = `Click 2`\n[Wiimote2]\nButtons/A = `D2`\n");
     var dolphinControls = OverlayControls.Read(scarlet with { Source="pc", Executable=dolphin, Arguments=[] }, root, []);

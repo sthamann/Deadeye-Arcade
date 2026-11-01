@@ -21,6 +21,8 @@ English and German are supported. A second check leaves healthy files unchanged.
 | Supported Dolphin accuracy profiles | Matches the disc region to the reviewed accuracy package, preserves learned aiming offsets and prepares independent RS3 DSU channels. Extraction uses Hybrid Ubershaders. |
 | Installed multiplayer plugins | Configures recognized HOTD 2: Remake and installed Blue Estate patch inputs according to their actual device format. Unknown plugin versions retain their own workflow. |
 | Supported game presentation | Uses native resolution and the normalized fullscreen route for absolute RawInput guns in supported Aliens profiles, avoiding a scaled-desktop conversion that can confine aim to a quarter of the screen. Relative input keeps its windowed route. Model 2 presentation is also prepared; changed settings are recorded. |
+| Old HOTD 4 Special loader | Uses the matching installed ElfLdr2 vendor template for this exact game. Retains user bindings, game path and existing settings; adds only missing defaults. Keeps the original profile backup. |
+| Incomplete Lindbergh ASCII copies | Keeps sibling `fs` and `drv` data beside `elf/*.elf` when preparing Unicode game paths. Revisits earlier prepared paths, preserves changed settings and game-created saves during the upgrade, and retains original game files. |
 | Existing Lindbergh shared libraries | For the specific supported ElfLdr2 profiles, copies only absent, valid ELF libraries from the installed game into the loader search folder. |
 | Duplicate launches / difficult exit | Launch reservation and process ownership are built into every session. Start + Coin is the independent emergency gesture; a trigger hold is optional because autofire can interrupt it. |
 

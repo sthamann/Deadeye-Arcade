@@ -1,6 +1,7 @@
-Fix the confirmed classic HOTD III fullscreen hang and retain the Saturn input audit corrections.
+Preserve complete Lindbergh game data when preparing paths without special characters.
 
-- Detect the reviewed installed HOTD III executable and Arcade Mod configuration. Back up the existing settings, disable its hanging exclusive fullscreen mode and present the owned renderer through Deadeye's existing borderless fullscreen path.
-- Keep unknown executable versions and unrelated games unchanged. The rule records its configuration changes in Automatic repairs; it does not download or replace game binaries.
-- Retain the corrected Beetle Saturn Trigger/Reload/Start audit, including detection of missing required actions and real shared-key conflicts.
-- The updated optional Terminator replay reaches an active two-player mission. Reviewed frames show independent shots and reloads for both players; grenade effects and physical tracking remain separate checks.
+- Keep the relative `elf`, `fs` and `drv` directory layout instead of copying only the ELF executable folder.
+- Upgrade earlier flattened copies while retaining modified player settings and game-created saves, including extensionless save files. Keep original game files and use their current executable data.
+- Repeated launches preserve newer progress and continue to propagate source updates.
+- Refresh old HOTD 4 Special loader metadata from the matching installed ElfLdr2 template, retaining bindings and user settings. Missing replacement templates or a different game executable leave the existing loader unchanged.
+- Six new core regressions cover sibling assets, upgrading an existing prepared path and keeping newer progress across repeated preparation. Native observations and remaining game-specific failures are tracked separately in the game-check guide.
