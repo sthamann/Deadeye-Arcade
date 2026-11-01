@@ -65,3 +65,19 @@ return to the frontend and the physical display mode.
 A trial to force a composited borderless Blue Estate window was rejected because
 the engine repeatedly restored its window frame. It is not part of the shipped
 change; existing display behavior and installed multiplayer patches are preserved.
+
+## Published package verification
+
+The [0.3.63 release](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.63)
+passed [747 Windows core checks and eight scene signal cases](https://github.com/sthamann/deadeye-arcade/actions/runs/41319015483).
+The installer and optional Input Lab archive were checked against their published
+SHA-256 digests before installation.
+
+On the physical Windows console, the installed package then passed a Railbreak
+launch, menu/resume, renderer-response and cleanup check. Rez Infinite remained
+frozen and was correctly rejected as `renderer-unresponsive` with
+`rendererResponse.responding: false`, even without opening the overlay.
+
+The library hash remained unchanged, no virtual test device collections remained,
+and the frontend returned to foreground. Both current and saved display modes
+were 3840 × 2160 at 60 Hz. These package checks add no physical-gun gameplay claim.
