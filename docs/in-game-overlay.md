@@ -35,3 +35,14 @@ monitor's bounds. Device probing preserves the existing frontend Raw Input
 registration. Session cleanup releases the launcher even if input restoration
 fails. Real trigger holds, aiming and simultaneous physical buttons still require
 a test at the connected monitor; Remote Desktop input is not that hardware test.
+
+For focused native diagnostics, run `ReaperArcade.exe --test-game <game-id> 120 --with-overlay`
+while the frontend is closed. The existing test opens the real game menu fifteen
+seconds after the renderer appears, closes it fifteen seconds later and checks
+that the game regains foreground focus. Its report records whether the menu was
+opened and resumed. It does not inject gun input or play through a mission.
+
+The most recent owned session also writes `last-session-<game-id>.json` to the
+local application data directory. Runtime process handles are retained until the
+report is written so exit codes remain available after a process disappears.
+The report distinguishes a requested stop from an unexpected end.

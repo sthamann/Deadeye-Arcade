@@ -154,7 +154,13 @@ public sealed class GameSession
             }
             catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
         overlayWindows.Clear();
-        if(Active && gameWindow!=0) SetForegroundWindow(gameWindow);
+        if(Active && gameWindow!=0)
+        {
+            // SDL fullscreen games can minimize themselves when the menu takes
+            // focus. Foreground activation alone does not restore that window.
+            if(IsIconic(gameWindow)) ShowWindowAsync(gameWindow,9);
+            SetForegroundWindow(gameWindow);
+        }
     }
     private static List<(int Id, int Parent)> Snapshot()
     {
@@ -276,6 +282,9 @@ public sealed class GameSession
         var targets = new HashSet<int>(); if (targetSeen) targets.Add(process.Id);
         var lastChild = DateTime.Now;
         var presented = new HashSet<nint>();
+        // Retain handles while the owned runtime is alive so its real exit code
+        // remains readable after the process disappears from the process list.
+        var runtimeMonitors = new Dictionary<int, (Process Process, string Name)>();
         bool legendShown=false;
         var windows=new GameWindowTracker();
         bool dolphin=DolphinSetup.IsDolphin(game);
@@ -303,6 +312,12 @@ public sealed class GameSession
                                 owned[item.Id] = candidate.StartTime;
                                 if (item.Id != process.Id) descendantSeen = true;
                                 if (exact) { targetSeen = true; targets.Add(item.Id); }
+                                if (IsGameRuntime(candidate,game,target,process.Id))
+                                {
+                                    var monitor=Process.GetProcessById(item.Id);
+                                    try { _=monitor.Handle;runtimeMonitors.Add(item.Id,(monitor,candidate.ProcessName)); }
+                                    catch { monitor.Dispose();throw; }
+                                }
                             }
                         }
                         catch (Exception e) when (e is System.ComponentModel.Win32Exception or ArgumentException or InvalidOperationException) { }
@@ -363,7 +378,9 @@ public sealed class GameSession
                     if (children > 0) lastChild = DateTime.Now;
                     if (targetSeen && liveTarget == 0 && (game.Source == "teknoparrot" || children == 0)) break;
                     if (descendantSeen && children == 0 && DateTime.Now - lastChild > TimeSpan.FromSeconds(3)) break;
-                    if (live == 0 && DateTime.Now - started > TimeSpan.FromSeconds(15)) throw new IOException(I18n.T("Der Starter wurde beendet, aber kein Spielprozess erkannt. Bitte das Profil direkt in seinem Emulator prüfen."));
+                    if (live == 0 && DateTime.Now - started > TimeSpan.FromSeconds(15)) throw new IOException(I18n.T(legendShown
+                        ? "Spiel und Starter wurden nach dem Spielstart unerwartet beendet. Bitte den Sitzungsbericht und das Emulatorprotokoll prüfen."
+                        : "Der Starter wurde beendet, aber kein Spielprozess erkannt. Bitte das Profil direkt in seinem Emulator prüfen."));
                     if (!targetSeen && !descendantSeen && DateTime.Now - started > TimeSpan.FromSeconds(30)) throw new IOException(I18n.T("Kein Spielprozess erkannt. TeknoParrot-Profil direkt prüfen."));
                 }
                 await Task.Delay(200);
@@ -373,6 +390,20 @@ public sealed class GameSession
         }
         finally
         {
+            try
+            {
+                var exits=runtimeMonitors.Select(pair=>new {id=pair.Key,name=pair.Value.Name,
+                    exited=pair.Value.Process.HasExited,exitCode=pair.Value.Process.HasExited?(int?)pair.Value.Process.ExitCode:null}).ToArray();
+                string report=Path.Combine(dataDirectory,"last-session-"+game.Id+".json");
+                File.WriteAllText(report+".new",System.Text.Json.JsonSerializer.Serialize(new {
+                    game.Id,game.Title,started,ended=DateTimeOffset.Now,windowObserved=legendShown,
+                    requestedStop=stop||cancellationToken.IsCancellationRequested,overlayVisible,
+                    launcherExited=process.HasExited,launcherExitCode=process.HasExited?(int?)process.ExitCode:null,runtimes=exits
+                },JsonDefaults.Options));
+                File.Move(report+".new",report,true);
+            }
+            catch(Exception e) when(e is IOException or UnauthorizedAccessException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
+            finally {foreach(var monitor in runtimeMonitors.Values)monitor.Process.Dispose();}
             await End();
             // The owning wrapper releases this session's helpers before returning to the menu.
         }

@@ -9,19 +9,19 @@ namespace Reaper.Windows;
 internal static class GameTestRunner
 {
     public static string StopName(int pid) => "Local\\DeadeyeGameTest-stop-" + pid;
-    public static bool RunPumped(GameEntry game, LibraryState state, string data, int seconds)
+    public static bool RunPumped(GameEntry game, LibraryState state, string data, int seconds, bool withOverlay = false)
     {
         bool result = false;
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         app.Startup += async (_, _) => {
-            try { result = await Run(game, state, data, seconds); }
+            try { result = await Run(game, state, data, seconds, withOverlay); }
             catch (Exception e) { WriteFailure(game, data, "test-error", e.ToString()); }
             finally { app.Shutdown(); }
         };
         app.Run();
         return result;
     }
-    public static async Task<bool> Run(GameEntry game, LibraryState state, string data, int seconds)
+    public static async Task<bool> Run(GameEntry game, LibraryState state, string data, int seconds, bool withOverlay = false)
     {
         if (seconds is < 5 or > 120) throw new ArgumentException("Test duration must be between 5 and 120 seconds.");
         using var stop = new EventWaitHandle(false, EventResetMode.ManualReset, StopName(Environment.ProcessId));
@@ -41,21 +41,42 @@ internal static class GameTestRunner
         try { run = session.Run(game, data, state.Bindings, cancellation.Token); }
         catch (Exception e) { run = Task.FromException(e); }
         bool cancelled = false;long? focusedSince=null;GameBlockingDialog? blockingDialog=null;long? blockedSince=null;
-        while (!observation.Finished)
+        InGameOverlay? overlay = null; long? overlayOpenedAt = null; bool overlayResumed = false;
+        try
         {
-            if (stop.WaitOne(0)) { cancelled = true; break; }
-            var dialog=session.BlockingDialog();
-            if(dialog is not null && dialog==blockingDialog)
+            while (!observation.Finished)
             {
-                blockedSince??=elapsed.ElapsedMilliseconds;
-                if(elapsed.ElapsedMilliseconds-blockedSince>=2000)break;
+                if (stop.WaitOne(0)) { cancelled = true; break; }
+                var dialog=session.BlockingDialog();
+                if(dialog is not null && dialog==blockingDialog)
+                {
+                    blockedSince??=elapsed.ElapsedMilliseconds;
+                    if(elapsed.ElapsedMilliseconds-blockedSince>=2000)break;
+                }
+                else {blockingDialog=dialog;blockedSince=null;}
+                observation.Update(elapsed.ElapsedMilliseconds, session.GameWindowAvailable?session.GameWindow.ToInt64():0L, run.IsCompleted);
+                // Exercise the real native menu and renderer focus path in the
+                // existing game test, without injecting synthetic gun events.
+                if (withOverlay && !run.IsCompleted && observation.FirstReadyAt is {} firstReady)
+                {
+                    if (overlayOpenedAt is null && elapsed.ElapsedMilliseconds-firstReady >= 15_000)
+                    {
+                        var bindings=state.Bindings.Select(b=>GameGunProfiles.ForGame(game,b)).ToArray();
+                        session.HideForOverlay();
+                        overlay=new InGameOverlay(game,OverlayControls.Read(game,data,bindings,input.Devices),bindings,_=>{},session.GameWindow);
+                        overlay.Show(); overlay.Arm(); overlayOpenedAt=elapsed.ElapsedMilliseconds;
+                    }
+                    else if (overlay is not null && elapsed.ElapsedMilliseconds-overlayOpenedAt >= 15_000)
+                    {
+                        overlay.Close(); overlay=null; session.RestoreFromOverlay(); overlayResumed=true;
+                    }
+                }
+                if(session.GameWindowAvailable && session.HasGameForeground())focusedSince??=elapsed.ElapsedMilliseconds;
+                else focusedSince=null;
+                if (!observation.Finished) await Task.Delay(100);
             }
-            else {blockingDialog=dialog;blockedSince=null;}
-            observation.Update(elapsed.ElapsedMilliseconds, session.GameWindowAvailable?session.GameWindow.ToInt64():0L, run.IsCompleted);
-            if(session.GameWindowAvailable && session.HasGameForeground())focusedSince??=elapsed.ElapsedMilliseconds;
-            else focusedSince=null;
-            if (!observation.Finished) await Task.Delay(100);
         }
+        finally { if(overlay is not null) {overlay.Close();session.RestoreFromOverlay();} }
         bool available = session.GameWindowAvailable;
         bool foreground = session.HasGameForeground();
         double foregroundStableSeconds=focusedSince is {} since?(elapsed.ElapsedMilliseconds-since)/1000.0:0;
@@ -68,6 +89,7 @@ internal static class GameTestRunner
         catch (Exception e) { error = e.Message; failure = GameTestFailure.From(e); }
         if(blockingDialog is not null) {error="A modal system or game dialog blocked the test: "+blockingDialog.Title+(blockingDialog.Text.Length>0?"\n"+blockingDialog.Text:"");failure=new("blocked-dialog",error,"",0,null);}
         if (error is null && observation.State != "passed") error = cancelled ? "Test cancelled." : observation.State;
+        if (error is null && withOverlay && !overlayResumed) {error="The requested in-game menu test did not complete.";failure=new("overlay-not-tested",error,"",0,null);}
         var after = session.LiveProcesses();
         var cleanupWait = Stopwatch.StartNew();
         while(after.Length>0 && cleanupWait.Elapsed<TimeSpan.FromSeconds(3)) {await Task.Delay(100);after=session.LiveProcesses();}
@@ -95,6 +117,7 @@ internal static class GameTestRunner
         string json = JsonSerializer.Serialize(new {
             schemaVersion = 2, time = DateTimeOffset.Now, game.Id, game.Title, seconds,
             appVersion = version, configurationFingerprint = fingerprint, testedAssignments = state.Bindings,
+            overlayRequested = withOverlay, overlayOpenedAt, overlayResumed,
             observedSeconds = observation.ObservedMilliseconds / 1000.0,
             totalSeconds = elapsed.Elapsed.TotalSeconds,
             startupSeconds = observation.FirstReadyAt / 1000.0,

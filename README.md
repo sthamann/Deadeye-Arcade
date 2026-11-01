@@ -177,6 +177,9 @@ Autofire can interrupt a trigger hold, so **Start + Coin/Select is the primary
 emergency gesture**. Exit detection runs independently of the frontend UI thread.
 Closing the app cancels pending launches. The in-game menu does not pause gameplay.
 Exclusive fullscreen games can cover desktop overlays.
+When returning from the menu, Deadeye restores a minimized renderer before
+returning focus. Real mouse release packets reset the global trigger hold even
+when the release occurs between timer polls.
 
 Optional desktop crosshairs show assigned P1/P2 aim positions over Desktop and
 Explorer and hide over games. Windows retains one shared system click pointer.
@@ -194,6 +197,12 @@ With the frontend closed, use `ReaperArcade.exe --test-library` for launch check
 or `ReaperArcade.exe --simulate-controls` for control checks. Resume, stop commands,
 report formats and detailed coverage are documented in the
 [library validation guide](docs/library-validation.md).
+
+For a focused menu and resume check, use
+`ReaperArcade.exe --test-game <game-id> 120 --with-overlay`. It opens the native
+menu, resumes the game and checks renderer focus and cleanup. Each owned session
+also saves `last-session-<game-id>.json` locally, including observed runtime exit
+codes and whether a stop was requested.
 
 ## Updates and your data
 

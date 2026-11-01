@@ -78,10 +78,10 @@ public static class App
                     },JsonDefaults.Options));
                     return;
                 }
-                if(args.Length==3 && args[0]=="--test-game")
+                if((args.Length==3 || args.Length==4 && args[3]=="--with-overlay") && args[0]=="--test-game")
                 {
                     var game = state.Games.Single(g => g.Id == args[1]);
-                    if (!GameTestRunner.RunPumped(game, state, data, int.Parse(args[2]))) Environment.ExitCode = 1;
+                    if (!GameTestRunner.RunPumped(game, state, data, int.Parse(args[2]), args.Length==4)) Environment.ExitCode = 1;
                     return;
                 }
                 if (args.Length == 1 && args[0] == "--inspect-guns")

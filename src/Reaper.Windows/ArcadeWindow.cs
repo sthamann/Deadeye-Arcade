@@ -351,6 +351,14 @@ public sealed class ArcadeWindow : Window
     private void Input(RawPacket packet)
     {
         session.Input(packet);
+        // The timer can miss a brief release during autofire. A real mouse-up
+        // packet must also break the global fallback hold, even if the next
+        // GetAsyncKeyState poll already sees the next shot pressed again.
+        if (session.Active && packet.Kind == "mouse" && (packet.Buttons & 2) != 0)
+        {
+            desktopTrigger.Button("desktop", false, Environment.TickCount64);
+            if (overlayOpener == 0) overlay?.Arm();
+        }
         // Button-only packets often have no absolute coordinates. Retain each
         // gun's own last aim instead of clicking at the shared Windows cursor.
         if (packet.Kind == "mouse") aim.Remember(packet.DeviceId, packet.Absolute, packet.X, packet.Y, packet.VirtualDesktop);
