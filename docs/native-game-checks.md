@@ -209,3 +209,19 @@ After this final check, the library hash was unchanged and the frontend window
 was observed again. Current and saved physical display modes were both
 3840 x 2160 at 60 Hz. These are bounded technical checks, not complete playthroughs
 or physical gun certification.
+
+The [0.3.71 package](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.71)
+passed [794 Windows core checks and 32 Input Lab checks](https://github.com/sthamann/deadeye-arcade/actions/runs/41430304460).
+The installer digest was verified before installation, and the installed assembly
+reports `0.3.71+052121ef763f893309842f5e69cf3badb148b1fb`.
+
+The installed app's selected-game repair corrected an intentionally reset Silent
+Hill Windowed field through the same automatic repair path used by the library.
+Both gun-control sections were unchanged. Only the selected game's findings were
+reported. A second repair left the profile hash and repair-history hash unchanged.
+
+A subsequent native check with Remote Desktop disconnected passed 55 seconds of
+renderer observation, foreground handling, menu/resume and owned-process cleanup.
+The frontend returned, the library hash was unchanged, and both current and saved
+physical modes remained 3840 x 2160 at 60 Hz. This check verifies the installed
+repair and session path; it adds no new aiming or hit-confirmation claim.
