@@ -36,11 +36,13 @@ internal static class GameTestRunner
         var observation = new GameTestObservation(seconds);
         var startedAt=DateTimeOffset.UtcNow;
         var elapsed = Stopwatch.StartNew();
+        long? preparedAt = null;
+        session.ProfilePrepared += () => preparedAt = elapsed.ElapsedMilliseconds;
         using var cancellation = new CancellationTokenSource();
         Task run;
         try { run = session.Run(game, data, state.Bindings, cancellation.Token); }
         catch (Exception e) { run = Task.FromException(e); }
-        bool cancelled = false;long? focusedSince=null;GameBlockingDialog? blockingDialog=null;long? blockedSince=null;
+        bool cancelled = false, preparationTimedOut = false;long? focusedSince=null;GameBlockingDialog? blockingDialog=null;long? blockedSince=null;
         InGameOverlay? overlay = null; long? overlayOpenedAt = null; bool overlayResumed = false;
         try
         {
@@ -54,12 +56,18 @@ internal static class GameTestRunner
                     if(elapsed.ElapsedMilliseconds-blockedSince>=2000)break;
                 }
                 else {blockingDialog=dialog;blockedSince=null;}
-                observation.Update(elapsed.ElapsedMilliseconds, session.GameWindowAvailable?session.GameWindow.ToInt64():0L, run.IsCompleted);
+                // Asset preparation can exceed the renderer startup budget on
+                // a first launch. Begin that budget after the real profile is
+                // prepared, while retaining a separate bounded preparation wait.
+                if(preparedAt is null && elapsed.ElapsedMilliseconds>=180_000)
+                    { preparationTimedOut=true; break; }
+                long launchElapsed = preparedAt is {} prepared ? elapsed.ElapsedMilliseconds-prepared : 0;
+                observation.Update(launchElapsed, session.GameWindowAvailable?session.GameWindow.ToInt64():0L, run.IsCompleted);
                 // Exercise the real native menu and renderer focus path in the
                 // existing game test, without injecting synthetic gun events.
                 if (withOverlay && !run.IsCompleted && observation.FirstReadyAt is {} firstReady)
                 {
-                    if (overlayOpenedAt is null && elapsed.ElapsedMilliseconds-firstReady >= 15_000)
+                    if (overlayOpenedAt is null && launchElapsed-firstReady >= 15_000)
                     {
                         var bindings=state.Bindings.Select(b=>GameGunProfiles.ForGame(game,b)).ToArray();
                         session.HideForOverlay();
@@ -94,6 +102,7 @@ internal static class GameTestRunner
         try { await run; }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { }
         catch (Exception e) { error = e.Message; failure = GameTestFailure.From(e); }
+        if(preparationTimedOut) {error="Game preparation did not complete within three minutes.";failure=new("preparation-timeout",error,"",0,null);}
         if(blockingDialog is not null) {error="A modal system or game dialog blocked the test: "+blockingDialog.Title+(blockingDialog.Text.Length>0?"\n"+blockingDialog.Text:"");failure=new("blocked-dialog",error,"",0,null);}
         if (error is null && observation.State != "passed") error = cancelled ? "Test cancelled." : observation.State;
         if (error is null && withOverlay && !overlayResumed) {error="The requested in-game menu test did not complete.";failure=new("overlay-not-tested",error,"",0,null);}
@@ -129,8 +138,9 @@ internal static class GameTestRunner
             overlayRequested = withOverlay, overlayOpenedAt, overlayResumed,
             observedSeconds = observation.ObservedMilliseconds / 1000.0,
             totalSeconds = elapsed.Elapsed.TotalSeconds,
+            preparationSeconds = preparedAt / 1000.0,
             startupSeconds = observation.FirstReadyAt / 1000.0,
-            phase = blockingDialog is null?observation.State:"blocked-dialog", cancelled, blockingDialog, blockingDialogAfterExit,
+            phase = preparationTimedOut?"preparation-timeout":blockingDialog is null?observation.State:"blocked-dialog", cancelled, blockingDialog, blockingDialogAfterExit,
             exitedEarly = observation.State == "exited-early", windowObserved = observation.FirstReadyAt is not null,
             gameWindowAvailable = available, foreground, foregroundStableSeconds, rendererResponse, inputBridge, error, failure, codeIntegrity, processDetails = details,
             processesBeforeExit = before, processesAfterExit = after, ended = !session.Active && after.Length == 0,

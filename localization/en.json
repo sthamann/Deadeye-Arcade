@@ -992,5 +992,6 @@
   "Relative Mauseingabe ist für diese absolute Lightgun aktiviert. Beim Spielstart wird das Profil korrigiert.": "Relative mouse input is enabled for this absolute lightgun. Launching the game repairs this profile.",
   "HOTD III Vollbildmodus": "HOTD III fullscreen mode",
   "Den hängenden exklusiven Vollbildmodus der geprüften HOTD-III-Version durch randloses Vollbild ersetzt.": "Replaced the unresponsive exclusive fullscreen mode of the reviewed HOTD III build with borderless fullscreen.",
-  "Windows konnte den vorherigen Bildschirmmodus nicht wiederherstellen (Code {0}).": "Windows could not restore the previous display mode (code {0})."
+  "Windows konnte den vorherigen Bildschirmmodus nicht wiederherstellen (Code {0}).": "Windows could not restore the previous display mode (code {0}).",
+  "Bombe": "Bomb"
 }

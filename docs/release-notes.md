@@ -1,10 +1,9 @@
-Keep HOTD EX full screen when opening and resuming the in-game menu.
+Make game checks more useful for two-player lightgun setups.
 
-- Use the reviewed renderer's native 1360 × 768, 60 Hz mode for the game session on a supported single physical display.
-- Back up its display profile and use borderless windowed presentation so the game menu remains visible without shrinking the resumed image.
-- Restore the previous desktop mode when the owned game session ends. Keep saved Windows display settings unchanged and record restoration results.
-- Preserve other games, Remote Desktop sessions, multiple-display setups, both players' controls and unrelated profile settings.
-- Exercise the actual Resume command during native menu tests rather than closing the test window directly.
-- Keep complete Lindbergh `elf`, `fs` and `drv` data and the matching installed HOTD 4 Special loader metadata during automatic setup.
+- Show Shoot and Bomb for both players in Alien3: The Gun and Terminator 2 rather than generic button numbers. Keep the actual installed MAME bindings intact.
+- Start the renderer startup budget after profile preparation and report preparation time separately. Slow first-run setup has its own bounded timeout and cleanup.
+- Add experimental two-gun MAME replays for the reviewed Alien3 and Terminator 2 launch recipes. Use isolated configuration and NVRAM copies, preserve existing calibration and verify that original files and the library remain unchanged.
+- Extend the optional Dolphin replay to the two Resident Evil Chronicles titles, with isolated first-run save prompts. Unknown game scenes still stop verification.
+- Record input desktop details when native GPU capture fails. Keep input delivery, observed game effects and physical gun acceptance separate.
 
-Presentation, virtual input delivery and physical gun gameplay remain separate verification results.
+Input Lab is optional developer tooling. Its virtual HID driver is never installed by the ordinary frontend. A successful automated run does not certify a complete game or physical tracking.

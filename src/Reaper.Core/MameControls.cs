@@ -81,7 +81,14 @@ public static class MameControls
             string expression=values.GetValueOrDefault(type,"");
             bool aim=type.Contains("_LIGHTGUN_")||type.Contains("_AD_STICK_");
             string label=aim?"Light Gun "+type[^1]:type.StartsWith("START")?"Start":type.StartsWith("COIN")?I18n.T("Münze"):type.Replace($"P{player}_BUTTON",I18n.T("Taste "));
-            rows.Add(new(player,label,string.IsNullOrWhiteSpace(expression)||expression=="NONE"?I18n.T("Nicht belegt"):expression,"MAME -listxml + effective cfg",expression,aim));
+            // Verified against both cabinets' live trigger/bomb responses. Keep
+            // unknown games generic rather than guessing their secondary action.
+            if(metadata.Rom is "alien3" or "term2")
+            {
+                if(type==$"P{player}_BUTTON1")label=I18n.T("Schießen");
+                if(type==$"P{player}_BUTTON2")label=I18n.T("Bombe");
+            }
+            rows.Add(new(player,label,string.IsNullOrWhiteSpace(expression)||expression=="NONE"?I18n.T("Nicht belegt"):expression,"MAME -listxml + effective cfg",expression,aim,type));
         }
         return new(rows.ToArray(),I18n.T("Benötigte Eingänge aus dem installierten MAME gelesen. Globale und individuelle Spielbelegungen sind berücksichtigt."));
     }

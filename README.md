@@ -115,6 +115,10 @@ physical monitor. Range effects do not certify a game's recoil integration.
 
 ## Profiles, dependencies and automatic repairs
 
+For Alien3: The Gun and Terminator 2 in MAME, the startup guide names each
+player’s Shoot and Bomb controls directly. It reads the installed emulator’s
+current bindings, including per-game overrides.
+
 Deadeye opens using the latest saved check results. It checks and repairs the
 selected game before launch; a full library repair runs when you choose it in
 Settings. Aim and button tests are optional and never required to launch a game.

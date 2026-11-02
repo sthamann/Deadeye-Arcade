@@ -1315,6 +1315,18 @@ RButton::y
     Check(!GameControlAudit.Read(missingMetadata,root,[p1,p2]).RequiredActionsChecked && GameControlAudit.Read(missingMetadata,root,[p1,p2]).Status!="mapping-checked","A generic controller profile cannot certify all actions without the game driver metadata");
     Check(MameControls.Configure(mameContract,root,[p1,p2])==1 && GameControlAudit.Read(mameContract,root,[p1,p2]).Status=="mapping-checked","MAME derives the required buttons from its actual game metadata and repairs the effective per-game route");
     Check(MameControls.Configure(mameContract,root,[p1,p2])==0 && XDocument.Load(mameTitle).Descendants("coins").Single().Value=="7" && XDocument.Load(mameTitle).Descendants("port").Single().Attribute("mask")!.Value=="4" && File.Exists(mameTitle+".before-deadeye-input"),"MAME repairs preserve bookkeeping, port identity, backups and repeated setup");
+    foreach(string rom in new[]{"alien3","term2"})
+    {
+        var cabinet=mameContract with {Id="labels-"+rom,Arguments=[rom]};
+        var cabinetMetadata=mameMetadata with {Rom=rom,MachineXml="<machine><input players='2' coins='2'><control type='lightgun' player='1' buttons='2'/><control type='lightgun' player='2' buttons='2'/></input></machine>"};
+        File.WriteAllText(MameControls.MetadataPath(cabinet,root),System.Text.Json.JsonSerializer.Serialize(cabinetMetadata,JsonDefaults.Options));
+        var cabinetRows=MameControls.Read(cabinet,root)!.Rows;
+        Check(Enumerable.Range(1,2).All(p=>cabinetRows.Single(r=>r.SourceKey==$"P{p}_BUTTON1").Function=="Schießen"&&cabinetRows.Single(r=>r.SourceKey==$"P{p}_BUTTON2").Function=="Bombe"),"Reviewed "+rom+" cabinet labels identify fire and bomb for both players without changing input expressions");
+        I18n.Language="en";
+        var englishRows=MameControls.Read(cabinet,root)!.Rows;
+        Check(Enumerable.Range(1,2).All(p=>englishRows.Single(r=>r.SourceKey==$"P{p}_BUTTON1").Function=="Shoot"&&englishRows.Single(r=>r.SourceKey==$"P{p}_BUTTON2").Function=="Bomb")&&englishRows.Select(r=>r.Expression).SequenceEqual(cabinetRows.Select(r=>r.Expression)),"English "+rom+" labels preserve both players' configured routes");
+        I18n.Language="de";
+    }
     var brokenAim=XDocument.Load(mameTitle);brokenAim.Descendants("input").Single().Add(new XElement("port",new XAttribute("type","P2_LIGHTGUN_X"),new XElement("newseq",new XAttribute("type","standard"),"GUNCODE_1_XAXIS")));brokenAim.Save(mameTitle);
     Check(GameControlAudit.Read(mameContract,root,[p1,p2]).Status=="needs-action","MAME checks aim axes independently of having valid fire buttons");
     using var http = new HttpClient(new FixtureHttp());

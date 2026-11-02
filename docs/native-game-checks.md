@@ -1,6 +1,6 @@
 # Native game checks
 
-These observations were made on a physical Windows 11 console on 1 November
+These observations were made on a physical Windows 11 console on 1–2 November
 2026. Remote Desktop was disconnected while games ran. They are bounded checks,
 not complete playthroughs or a certification of every physical gun model.
 
@@ -45,11 +45,11 @@ virtual-input observations where an adapter was available.
 | The House of the Dead 2, Dreamcast | Native launch, menu/resume and cleanup passed. | Actual gun actions and independent P2 gameplay. |
 | The House of the Dead 2, classic Windows | Initial check exited with code -1. Two later native launches passed renderer response, menu/resume and cleanup, with rendered game scenes. | Earlier failure is intermittent and its cause is unproven. These passes occurred without a configuration repair. Independent P2 support and complete gun controls remain open. |
 | The House of the Dead III, classic Windows with Arcade Mod | Controlled comparison identified the exclusive fullscreen flag: `1` froze; changing only that flag to `0` passed. The automatic repair then passed a 60-second native check with the existing helper, borderless presentation, menu/resume and cleanup. GPU capture shows rendered Start/Freeplay output filling the monitor without window chrome. | Actual independent P2 shots, reload and path selection remain unverified. The installed executable fingerprint scopes the repair; no game binary was replaced. |
-| The House of the Dead III, Chihiro | Passed native launch, renderer response, menu/resume and cleanup when started as an ordinary user. | The first elevated test hit the emulator's administrator warning. No in-level gun-action certificate. |
+| The House of the Dead III, Chihiro | The process/window, menu/resume and cleanup checks pass as an ordinary user, but visual review reveals Error 11: JVS I/O board not connected. | A side-by-side native comparison using the matching Chihiro-DS loader reached normal intro/credits output without Error 11. It remains windowed and has no confirmed gun/helper mapping, so the original library entry was restored. No in-level acceptance. |
 | The House of the Dead: Remake | Native launch, rendered menu, menu/resume and cleanup passed. Existing multiplayer input mode was confirmed. | Actual independent P2 actions and sustained play remain unverified. The two installed version-specific plugin DLLs deliberately self-select; their presence alone is not a conflict. |
 | The Walking Dead Arcade | Both players joined an active level. Separate reticles and ammunition counters were visible; each player's shot reduced its own ammunition from 8 to 7. Both aim sweeps and packet isolation passed. | Hits, complete special-action coverage, sustained play and physical tracking remain open. Some attract-screen captures show overlapping image fragments; the in-level replay frames are clear. An initial cold launch was black; later launches rendered with and without the menu, so an overlay cause was not established. |
 | Terminator Salvation | Follow-up replay used the mapped Reload to skip the cinematic, reached an active two-player mission and passed independent aim/button packet checks. Each player shot from 60 to 57 rounds without reducing the other player's ammunition, then reloaded from 57 to 60. | Grenade effects, confirmed hits, sustained play and physical tracking remain unverified. |
-| Terminator 2: Judgment Day, MAME | Native launch, menu/resume and cleanup passed. | Actual game-specific action effects, independent players and physical tracking. |
+| Terminator 2: Judgment Day, MAME | Native launch, menu/resume and cleanup passed. Two virtual players entered gameplay; shots were visible and each mapped Bomb changed its own counter from 25 to 24. | Confirmed hits, complete aim accuracy, sustained play and physical tracking. |
 
 The automatic TeknoParrot setup now detects stale `Use Relative Input` settings
 and turns them off for assigned RS3 Reaper, Sinden, XGunner and Blamcon profiles
@@ -69,6 +69,34 @@ Vendor guidance checked during diagnosis: [Dolphin accuracy profiles](https://gi
 [HOTD Remake Arcade Plugin](https://github.com/argonlefou/HotdRemake_ArcadePlugin).
 No replacement commercial game executable was downloaded or installed during
 these checks.
+
+## Additional native and two-player checks
+
+A further selected group ran on 2 November. Both Resident Evil Chronicles titles,
+Alien3: The Gun, Aliens: Extermination, Silent Hill Arcade, Terminator Salvation
+and the installed Dead Containment demo passed bounded native window,
+menu/resume and cleanup checks. Fourteen House of the Dead launch entries also
+completed that technical check. Visual review remains essential: the Chihiro
+entry above shows a JVS error despite its responsive window.
+
+| Game | Additional observation | Still open |
+| --- | --- | --- |
+| Alien3: The Gun, MAME | Credits increased independently. Two players entered the mission, shots were visible and each Bomb reduced its own remaining count. The English in-game guide visibly names Shoot and Bomb for both selected guns. | Full aiming accuracy, hits, sustained play and physical tracking. |
+| Aliens: Extermination | The native and virtual two-gun replays completed; reviewed frames show an active two-player level and shots. Profiles and the library were restored unchanged. | Complete weapon effects, hit confirmation, sustained play and physical tracking. |
+| Aliens Armageddon | A later native candidate passed renderer, foreground, menu/resume and cleanup checks. A pointed Story Mode selection reached an active two-player mission. Both triggers produced visible shots; P2 also increased its kill counter. | Grenades, reload effects, sustained play and physical tracking. The earlier timeout is retained as an intermittent failure. |
+| Resident Evil: The Umbrella Chronicles | Native menu/resume and cleanup pass. In isolated NAND, pointed A confirms the first-run save prompt and reaches Load Game. | The replay must enter an actual mission before weapon actions can be accepted. |
+| Resident Evil: The Darkside Chronicles | Native menu/resume and cleanup pass. In isolated NAND, pointed A confirms the first-run save prompt and reaches Profile Selection. | Mission entry and actual independent player actions. |
+| Silent Hill: The Arcade | Native launch/menu/cleanup pass. Virtual replay resolves both players' bindings but GPU capture fails with access denied while both input and thread desktops are Default. | Capture failure diagnosis and actual game responses. It is not classified as a game crash. |
+
+The MAME pilot reads the emulator's effective output directories, preserves
+calibration in isolated configuration/NVRAM copies, and checks original hashes
+after each replay. It does not alter original saves or the game library. Its
+reviewed scope is Alien3 and Terminator 2, without custom helper scripts.
+
+The launch test now measures profile preparation separately from renderer
+startup. Preparation has a three-minute limit; the renderer budget begins at the
+actual profile-prepared event. A slow preparation cannot consume the entire
+renderer-start budget, and both phases remain bounded with ordinary cleanup.
 
 ## What the checks establish
 

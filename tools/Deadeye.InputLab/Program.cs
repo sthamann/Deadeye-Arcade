@@ -75,8 +75,22 @@ internal static partial class Program
                     ||!DolphinReadyText("HOUSE OF THE DEAD OVERKILL Press A Button")
                     ||!DolphinReadyText("Story Mode Challenge Mode Options")
                     ||DolphinReadyText("Wii Zapper Use Press A")||DolphinReadyText("Loading Press A or B to Start")
-                    ||DolphinReadyText("OVERKILL The capability to obliterate a target with more weapons than required"))throw new IOException("Scene signal regression failed.");
-                Console.WriteLine("Scene signal checks passed (eight arcade and six Dolphin cases).");return 0;
+                    ||DolphinReadyText("OVERKILL The capability to obliterate a target with more weapons than required")
+                    ||!DolphinReadyText("RESIDENT EVIL THE UMBRELLA CHRONICLES Press any button")
+                    ||!DolphinReadyText("RESIDENT EVIL THE DARKSIDE CHRONICLES New Game Load Game")
+                    ||DolphinReadyText("RESIDENT EVIL CHRONICLES CAPCOM All Rights Reserved")
+                    ||DolphinReadyText("Loading Resident Evil Chronicles New Game"))throw new IOException("Scene signal regression failed.");
+                var mame = new GameEntry("fixture","Alien3","MAME","mame.exe",["alien3","-rompath","roms"],".","mame","alien3.zip");
+                if(!SupportsMameReplay(mame)||SupportsMameReplay(mame with {Arguments=["alien3","-autoboot_script","unknown.lua"]})
+                    ||SupportsMameReplay(mame with {Arguments=["unreviewed"]})
+                    ||!Within(Path.Combine("sample","cfg","child"),Path.Combine("sample","cfg"))
+                    ||Within(Path.Combine("sample","cfg-other"),Path.Combine("sample","cfg")))throw new IOException("MAME replay scope regression failed.");
+                if(!DolphinCreateSaveText("Save game data not found. Create data?","RBUE08")
+                    ||DolphinCreateSaveText("Delete existing save data?","RBUE08")
+                    ||!DolphinCreateSaveText("Save game data not found. Create data?","SBDE08")
+                    ||DolphinCreateSaveText("Save game data not found. Create data?","RZJE69")
+                    ||DolphinReadyText("Save game data not found. Create data?"))throw new IOException("Dolphin first-run prompt scope regression failed.");
+                Console.WriteLine("Scene signal checks passed (18 cases); MAME replay scope checks passed (five cases); Dolphin save prompt checks passed (five cases).");return 0;
             }
             if(args.Length < 2 || args[0] is not ("plan" or "run"))
                 throw new ArgumentException("Usage: Deadeye.InputLab plan|run GAME_ID [--data DIR] [--output DIR] [--install-driver] [--input-route-probe] [--windowed-probe] [--hold-ms 50..2000]; capture --output DIR; read-scene IMAGE");
@@ -93,7 +107,7 @@ internal static partial class Program
             if(args[0]=="plan")
             {
                 Console.WriteLine(JsonSerializer.Serialize(new { game.Id,game.Title,
-                    backend=game.Source=="teknoparrot"?"virtual-absolute-hid":SupportsDolphinReplay(game)?"isolated-dolphin-dsu":"not-yet-supported",
+                    backend=game.Source=="teknoparrot"?"virtual-absolute-hid":SupportsDolphinReplay(game)?"isolated-dolphin-dsu":SupportsMameReplay(game)?"isolated-mame-rawinput":"not-yet-supported",
                     controls=OverlayControls.Read(game,data,library.Bindings),
                     note="A plan reads configuration only. It does not install a driver or verify gameplay." },json));
                 return 0;
@@ -102,9 +116,14 @@ internal static partial class Program
             if(dolphin)
             {
                 if(!SupportsDolphinReplay(game))
-                    throw new NotSupportedException("The isolated Dolphin replay currently covers Extraction and Overkill without external helpers.");
+                    throw new NotSupportedException("The isolated Dolphin replay covers Extraction, Overkill and the Resident Evil Chronicles without external helpers.");
                 if(args.Contains("--input-route-probe")||args.Contains("--windowed-probe"))
                     throw new NotSupportedException("TeknoParrot comparison flags do not apply to Dolphin.");
+            }
+            else if(SupportsMameReplay(game))
+            {
+                if(args.Contains("--input-route-probe")||args.Contains("--windowed-probe"))
+                    throw new NotSupportedException("TeknoParrot comparison flags do not apply to MAME.");
             }
             else
             {
@@ -184,7 +203,7 @@ internal static partial class Program
         using var p1=context.CreateController(Profile(1),"deadeye-input-lab-p1");
         using var p2=context.CreateController(Profile(2),"deadeye-input-lab-p2");
         var controllers=new[]{p1,p2};
-        evidence.Add(new {stage="driver",context.IsDriverInstalled,remote=GetSystemMetrics(0x1000)!=0});
+        evidence.Add(new {stage="driver",context.IsDriverInstalled,remote=GetSystemMetrics(0x1000)!=0,desktop=InputDesktopDiagnostics.Read()});
         var players=new List<GunBinding>();
         var until=Stopwatch.StartNew();
         while(players.Count<2 && until.Elapsed<TimeSpan.FromSeconds(15))
@@ -213,6 +232,8 @@ internal static partial class Program
         string libraryFile=Path.Combine(data,"library.json"),libraryHash=Hash(libraryFile);
         if(DolphinSetup.IsDolphin(game))
         {await ReplayDolphin(game,data,players,controllers,libraryFile,libraryHash);return;}
+        if(SupportsMameReplay(game))
+        {await ReplayMame(game,data,players,controllers,libraryFile,libraryHash);return;}
         string backup=Path.Combine(output,"profile-before.xml");File.Copy(game.SourcePath,backup,false);
         string? preparedHash=null;
         File.WriteAllText(Path.Combine(output,"restore.json"),JsonSerializer.Serialize(new {path=game.SourcePath,backup,beforeHash=Hash(backup),preparedHash},json));
@@ -280,6 +301,20 @@ internal static partial class Program
                 for(int i=0;i<presses;i++)await Action(session,controllers,players,row);
             }
             await Delay(5000);
+            if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath)=="AliensArmageddon")
+            {
+                string menu=Capture(session,"armageddon-mode-menu");string text=await SceneText(Path.Combine(output,menu));
+                evidence.Add(new {stage="armageddon-mode-menu",frame=menu,text});
+                if(!Regex.IsMatch(text,@"CHOOSE.*GAME.*MODE",RegexOptions.IgnoreCase)||!Regex.IsMatch(text,@"CHAPTER\s*MODE",RegexOptions.IgnoreCase)||!Regex.IsMatch(text,@"FROM\s*THE\s*BEGINNING",RegexOptions.IgnoreCase))
+                    throw new IOException("Armageddon did not reach the reviewed Story/Chapter choice; weapon replay refused.");
+                await Action(session,controllers,players,actions.First(r=>r.SourceKey=="P1Button1"),(int)(32767*.28),(int)(32767*.50));
+                await Delay(5000);
+                evidence.Add(new {stage="armageddon-after-story",frame=Capture(session,"armageddon-after-story")});
+                await Delay(30000);
+                foreach(var row in actions.Where(r=>r.SourceKey is "P1Button1" or "P2Button1"))await Action(session,controllers,players,row);
+                await Delay(3000);
+                evidence.Add(new {stage="armageddon-after-intro",frame=Capture(session,"armageddon-after-intro"),gameResponse="requires-visual-review"});
+            }
             if(!routeProbe&&XDocument.Load(game.SourcePath).Root?.Element("EmulationProfile")?.Value=="Hotd4sp")
             {
                 // The first Start resets the cabinet ride and begins a fresh
@@ -437,15 +472,16 @@ internal static partial class Program
         if(!session.Active||!session.GameWindowAvailable||!session.HasGameForeground())throw new IOException("Game lost foreground. Input replay stopped before sending another action.");
     }
     private static RawPacket[] Drain(){var list=new List<RawPacket>();while(packets.TryDequeue(out var p))list.Add(p);return list.ToArray();}
-    private static async Task Action(GameSession session,HMController[] devices,List<GunBinding> players,ControlRow row)
+    private static async Task Action(GameSession session,HMController[] devices,List<GunBinding> players,ControlRow row,int x=16384,int y=16384)
     {
         RequireGame(session);var match=Regex.Match(row.Expression??"",@"^P([12])\|(mouse|key):(\d+)$");
         if(!match.Success){evidence.Add(new {stage="action",row.Player,row.Function,row.Expression,status="not-replayable"});return;}
         int p=int.Parse(match.Groups[1].Value),code=int.Parse(match.Groups[3].Value);bool mouse=match.Groups[2].Value=="mouse";
         if(!mouse&&code is 27 or 91 or 92 or 0x73 or 0x79 or 0x7b){evidence.Add(new{stage="action",row.Player,row.Function,status="reserved-system-or-exit-key"});return;}
+        if(x!=16384||y!=16384){devices[p-1].SubmitMouse(new HMMouseState{X=x,Y=y});await Delay(300);}
         string before=Capture(session,$"p{p}-{row.SourceKey}-before");var gameBefore=gameObservation?.Sample();var pipeBefore=pipe?.Sample();AliensSample? gameHeld=null;PipeSample? pipeHeld=null;string? heldFrame=null;Drain();
-        try{Send(devices[p-1],mouse,code,true);await Delay(requestedHoldMilliseconds??150);gameHeld=gameObservation?.Sample();pipeHeld=pipe?.Sample();heldFrame=Capture(session,$"p{p}-{row.SourceKey}-held");}
-        finally{Send(devices[p-1],mouse,code,false);}
+        try{Send(devices[p-1],mouse,code,true,x,y);await Delay(requestedHoldMilliseconds??150);gameHeld=gameObservation?.Sample();pipeHeld=pipe?.Sample();heldFrame=Capture(session,$"p{p}-{row.SourceKey}-held");}
+        finally{Send(devices[p-1],mouse,code,false,x,y);}
         await Delay(300);var received=Drain();string id=mouse?players[p-1].MouseId:players[p-1].KeyboardId!;
         bool down=received.Any(r=>r.DeviceId==id&&(mouse?(r.Buttons&(1<<((code-1)*2)))!=0:r.Key==code&&r.Down));
         bool up=received.Any(r=>r.DeviceId==id&&(mouse?(r.Buttons&(2<<((code-1)*2)))!=0:r.Key==code&&!r.Down));
@@ -486,9 +522,9 @@ internal static partial class Program
             note="Latency is virtual HID submission to this RawInput receiver. Camera tracking and rendered frame latency are not measured."});
         if(!monotonic||latency.Count<sent.Count*.95)throw new IOException($"P{player.Player} sweep lost or reordered input reports.");
     }
-    private static void Send(HMController device,bool mouse,int code,bool down)
+    private static void Send(HMController device,bool mouse,int code,bool down,int x=16384,int y=16384)
     {
-        if(mouse){if(code is <1 or >5)throw new ArgumentOutOfRangeException(nameof(code));device.SubmitMouse(new HMMouseState{X=16384,Y=16384,Buttons=down?(HMMouseButtons)(1<<(code-1)):0});return;}
+        if(mouse){if(code is <1 or >5)throw new ArgumentOutOfRangeException(nameof(code));device.SubmitMouse(new HMMouseState{X=x,Y=y,Buttons=down?(HMMouseButtons)(1<<(code-1)):0});return;}
         int usage=code switch {>=65 and <=90=>code-65+4,>=49 and <=57=>code-49+0x1e,48=>0x27,13=>0x28,27=>0x29,8=>0x2a,9=>0x2b,32=>0x2c,37=>0x50,38=>0x52,39=>0x4f,40=>0x51,>=112 and <=123=>code-112+0x3a,_=>throw new NotSupportedException($"Virtual key {code} needs a reviewed HID translation.")};
         device.SubmitKeyboard(HMKeyModifiers.None,down?new[]{(HMKey)usage}:ReadOnlySpan<HMKey>.Empty);
     }
@@ -498,13 +534,32 @@ internal static partial class Program
         var origin=new PointNative();if(!ClientToScreen(session.GameWindow,ref origin)||rect.Right<1||rect.Bottom<1)throw new IOException("Invalid renderer dimensions.");
         nint monitor=MonitorFromWindow(session.GameWindow,2);var info=new MonitorInfo{Size=Marshal.SizeOf<MonitorInfo>()};
         if(!GetMonitorInfo(monitor,ref info))throw new IOException("Cannot inspect the game monitor.");
-        using var full=GpuCapture.Frame(monitor);
+        using var full=CaptureOutput(monitor,name);
         var region=new Rectangle(origin.X-info.Monitor.Left,origin.Y-info.Monitor.Top,rect.Right,rect.Bottom);
         if(region.Left<0||region.Top<0||region.Right>full.Width||region.Bottom>full.Height)throw new IOException("The game client extends outside its captured GPU output.");
         int width=name=="startup-scene"?1600:960;
         using var small=new Bitmap(width,Math.Max(1,(int)(region.Height*width/(double)region.Width)));
         using(var g=Graphics.FromImage(small))g.DrawImage(full,new Rectangle(0,0,small.Width,small.Height),region,GraphicsUnit.Pixel);
         string file=$"{DateTime.UtcNow:HHmmssfff}-{Regex.Replace(name,@"[^\w-]","_")}.jpg";small.Save(Path.Combine(output,file),ImageFormat.Jpeg);return file;
+    }
+    private static Bitmap CaptureOutput(nint monitor,string name)
+    {
+        for(int attempt=0;;attempt++)
+        {
+            try {return GpuCapture.Frame(monitor);}
+            catch(Exception error)
+            {
+                var desktop=InputDesktopDiagnostics.Read();
+                // Microsoft's desktop-duplication sample treats access denial
+                // as a possible display transition. Retry briefly on Default
+                // only; never switch desktop or elevate capture privileges.
+                bool retry=error.HResult==unchecked((int)0x80070005)&&attempt<3
+                    &&desktop.inputDesktopError==0&&desktop.inputDesktop=="Default"&&desktop.threadDesktop=="Default";
+                evidence.Add(new {stage=retry?"capture-retry":"capture-failure",name,attempt,desktop,error=error.Message});
+                if(!retry)throw;
+                cancel.Token.WaitHandle.WaitOne(1000);cancel.Token.ThrowIfCancellationRequested();
+            }
+        }
     }
     [StructLayout(LayoutKind.Sequential)]private struct MonitorInfo{public int Size;public Rect Monitor,Work;public uint Flags;}
     [DllImport("user32.dll")]private static extern nint MonitorFromWindow(nint window,uint flags);

@@ -6,10 +6,14 @@ the assigned guns' learned mappings and launches through Deadeye's existing
 `GameSession`. It does not use `SendInput` as a substitute for two physical devices.
 
 The TeknoParrot adapter runs direct absolute RawInput profiles without external
-helpers. An experimental Dolphin pilot attempts Extraction and Overkill replay through
-the production DSU input bridge in an isolated emulator user directory. Profiles that can prepare shared Lindbergh libraries
-(Primeval Hunt and HOTD 4 EX) are excluded until those files have a restore recipe. Other launch paths remain unsupported until their changed files have a
-reviewed restoration recipe. `plan` can read the existing controls for any game.
+helpers. Experimental adapters cover Alien3 and Terminator 2 in MAME, and
+Extraction, Overkill and both Resident Evil Chronicles families in Dolphin.
+Dolphin uses the production DSU bridge with an isolated emulator user directory.
+The MAME adapter keeps its controller profiles, cabinet configuration and NVRAM
+in a separate directory. Primeval Hunt is excluded. HOTD EX requires both shared
+loader libraries to be present before replay. Other launch paths remain
+unsupported until their changed files have a reviewed restoration recipe.
+`plan` can read the existing controls for any game.
 
 ## Build
 
@@ -125,8 +129,9 @@ establish that transition. Generic replay keeps `gameplayVerified` false.
 
 ## Experimental isolated Dolphin replay
 
-`run` has an experimental adapter for the Dead Space: Extraction and House of the Dead:
-Overkill disc families when their accuracy profile and two gun assignments are
+`run` has an experimental adapter for the Dead Space: Extraction, House of the Dead:
+Overkill, Resident Evil: The Umbrella Chronicles and The Darkside Chronicles
+disc families when their accuracy profile and two gun assignments are
 available. It copies configuration INIs into a new `dolphin-user` directory beside
 the report, redirects NAND and memory-card paths there and disables SD-card
 writes. It does not copy the disc or existing saves. Original configuration files
@@ -138,12 +143,15 @@ frames sent to each player slot, resolves required actions into physical button
 chords, and checks their press/release and player isolation. Boot observations
 handle the reviewed Wii notices and wait for a recognized title prompt before
 the aim grid and action replay. Missing subscriptions or an unknown boot scene
-fail explicitly.
+fail explicitly. The Chronicles pilot confirms only the observed Create Data
+prompts and selects a new profile inside the isolated NAND. It never operates
+on existing player saves.
 
-The native transport pilot received both controller subscriptions and delivered
-independent inputs. The later scene-gated run stopped on unrecognized boot/title
-images in both games. Automatic gameplay entry is unresolved; the adapter must not
-be presented as a completed gameplay test. `read-scene IMAGE` reads OCR from an
+The original Extraction and Overkill transport pilot received both controller
+subscriptions and delivered independent inputs. Its scene-gated runs stopped on
+unrecognized boot/title images. Automatic gameplay entry requires a reviewed
+scene in each title; the adapter must not be presented as a completed gameplay
+test. `read-scene IMAGE` reads OCR from an
 existing image without creating devices or launching a game.
 
 These checks establish input transport and retain images for review. A title
@@ -151,9 +159,33 @@ screen or matching DSU frame does not establish an in-level hit, reload, weapon
 selection or successful two-player gameplay. Tracking cameras and recoil remain
 outside this test.
 
+## Experimental isolated MAME replay
+
+The MAME pilot accepts the `alien3` and `term2` ROM identifiers, without helpers
+or custom launch scripts. It reads the installed emulator's effective output
+directories, copies the selected cabinet configuration and NVRAM, and redirects
+configuration, NVRAM, save states, screenshots, recordings, disk differences and
+debugger comments into the report's `mame-user` directory. Existing calibration
+values are retained in the copies. ROMs are not copied and autosave is disabled.
+
+The normal production launch code builds the controller mapping for the two
+virtual devices. The pilot resolves each required action from that effective
+mapping, sends Coin and Start first, then replays the aiming grid, sweeps and
+buttons. Captures and RawInput events are separate evidence. Original
+configuration, NVRAM and library hashes are checked after cleanup. Linked paths,
+ambiguous output directories and configuration copies larger than 32 MB are
+refused. A completed replay still needs visual review of movement, shots and
+secondary actions in the game.
+
 For a deliberate long-press comparison, use `--hold-ms 1000` with `run`. The
 accepted range is 50–2000 milliseconds. The requested duration is recorded in the
 report; it does not change the physical guns' firmware or normal game controls.
 
 The reviewed mission timers also cover Terminator Salvation and Walking Dead.
 Wait for the post-timer scene before interpreting the later weapon actions.
+
+Armageddon's reviewed replay aims at Story Mode before its warmup and weapon
+actions. Captures must show the subsequent mission; selecting a menu tile is
+not a gameplay result. Capture retries after access denial are limited to three
+seconds on the existing Default desktop, without switching desktops or changing
+security settings. A persistent refusal remains a failed capture.

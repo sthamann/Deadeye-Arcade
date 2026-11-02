@@ -11,7 +11,7 @@ internal static partial class Program
     private static bool SupportsDolphinReplay(GameEntry game)
     {
         string id=DolphinSetup.IsDolphin(game)?DolphinSetup.DiscId(game)??"":"";
-        return (id.StartsWith("RZJ")||id.StartsWith("RHO"))&&(game.Helpers??[]).Length==0
+        return (id.StartsWith("RZJ")||id.StartsWith("RHO")||id.StartsWith("RBU")||id.StartsWith("SBD"))&&(game.Helpers??[]).Length==0
             &&!game.Arguments.Any(a=>a is "-u" or "--user"||a.StartsWith("--user="));
     }
 
@@ -68,7 +68,7 @@ internal static partial class Program
             evidence.Add(new {stage="dolphin-action-plan",plan,note="Production DSU frame evaluation; live game response is recorded separately."});
             if(plan.Games.Single().Status!="simulation-passed")throw new IOException("Dolphin action plan has unresolved or colliding inputs; live replay refused.");
             await Delay(15000);RequireGame(session);neutralStop.Cancel();await neutral;
-            await DolphinTitle(session,devices,players,actions);
+            await DolphinTitle(session,devices,players,actions,DolphinSetup.DiscId(original)??"");
             var bridge=JsonSerializer.SerializeToElement(session.InputDiagnostics(),json);
             evidence.Add(new {stage="dolphin-consumer",bridge,note="Dolphin subscriptions and production bridge frames sent to each controller slot."});
             if(bridge.ValueKind!=JsonValueKind.Object||!bridge.TryGetProperty("subscriptions",out var subscriptions)||!bridge.TryGetProperty("frames",out var frames)
@@ -117,7 +117,7 @@ internal static partial class Program
         }
     }
 
-    private static async Task DolphinTitle(GameSession session,HMController[] devices,List<GunBinding> players,SimulatedAction[] actions)
+    private static async Task DolphinTitle(GameSession session,HMController[] devices,List<GunBinding> players,SimulatedAction[] actions,string discId)
     {
         var clock=System.Diagnostics.Stopwatch.StartNew();
         var accept=actions.First(a=>a.Player==1&&a.Function=="Buttons/A");
@@ -129,8 +129,31 @@ internal static partial class Program
             if(title)return;
             // Observed Wii strap/Zapper screens need A. These are boot prompts,
             // not gameplay actions. Stop rather than certifying an unknown scene.
+            bool createSave=DolphinCreateSaveText(text,discId);
+            bool newProfile=(discId.StartsWith("RBU")&&System.Text.RegularExpressions.Regex.IsMatch(text,@"\bLoad\b",System.Text.RegularExpressions.RegexOptions.IgnoreCase)&&System.Text.RegularExpressions.Regex.IsMatch(text,@"NEW\s*GA[MN]E",System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+                ||(discId.StartsWith("SBD")&&text.Contains("PROFILE SELECTION",StringComparison.OrdinalIgnoreCase)&&text.Contains("NO DATA",StringComparison.OrdinalIgnoreCase));
             bool prompt=System.Text.RegularExpressions.Regex.IsMatch(text,@"ZAPPER|WRIST|STRAP|NUNCHUK|WII\s*REMOTE|HEALTH.*SAFETY|PRESS.*(?:A|BUTTON)",System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            if(prompt)
+            if(newProfile)
+            {
+                bool saveSlot=discId.StartsWith("SBD")&&System.Text.RegularExpressions.Regex.IsMatch(text,@"file\s*to\s*save",System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                int x=(int)(32767*(discId.StartsWith("SBD")?(saveSlot?.31:.21):.50)),y=(int)(32767*(discId.StartsWith("SBD")?.38:.21));
+                var tokens=accept.Buttons.Select(id=>StartupControls.Hardware(players[0]).Single(h=>h.Id==id).Token!).Distinct().ToArray();
+                devices[0].SubmitMouse(new HMMouseState{X=x,Y=y});await Delay(400);
+                try{DolphinChord(devices[0],tokens,x,y);await Delay(150);}finally{DolphinChord(devices[0],[],x,y);}
+                evidence.Add(new {stage="dolphin-new-test-profile",x,y,note="Select observed New Game target in isolated NAND only."});
+            }
+            else if(createSave)
+            {
+                // Observed Umbrella first-run prompt in the disposable NAND.
+                // Its Yes target is left/below centre and needs pointed input;
+                // pressing B repeatedly in the centre cannot select it.
+                int x=(int)(32767*(discId.StartsWith("SBD")?.40:.28)),y=(int)(32767*(discId.StartsWith("SBD")?.60:.67));
+                var tokens=accept.Buttons.Select(id=>StartupControls.Hardware(players[0]).Single(h=>h.Id==id).Token!).Distinct().ToArray();
+                devices[0].SubmitMouse(new HMMouseState{X=x,Y=y});await Delay(400);
+                try{DolphinChord(devices[0],tokens,x,y);await Delay(150);}finally{DolphinChord(devices[0],[],x,y);}
+                evidence.Add(new {stage="dolphin-create-test-save",x,y,note="Pointed confirmation inside isolated NAND only; original saves are not copied or modified."});
+            }
+            else if(prompt)
             {
                 var tokens=accept.Buttons.Select(id=>StartupControls.Hardware(players[0]).Single(h=>h.Id==id).Token!).Distinct().ToArray();
                 try{DolphinChord(devices[0],tokens);await Delay(150);}finally{DolphinChord(devices[0],[]);}
@@ -147,6 +170,9 @@ internal static partial class Program
         throw new IOException("Dolphin did not reach the reviewed title prompt; input delivery is not gameplay verification.");
     }
 
+    private static bool DolphinCreateSaveText(string text,string discId) => (discId.StartsWith("RBU")||discId.StartsWith("SBD"))
+        && System.Text.RegularExpressions.Regex.IsMatch(text,@"Save\s+game\s+data\s+not\s+found.*Create\s+data",System.Text.RegularExpressions.RegexOptions.IgnoreCase|System.Text.RegularExpressions.RegexOptions.Singleline);
+
     private static bool DolphinReadyText(string text)
     {
         var options=System.Text.RegularExpressions.RegexOptions.IgnoreCase;
@@ -156,6 +182,7 @@ internal static partial class Program
         return Match(@"PRESS.*(?:START|BEGIN)")
             ||compact.Contains("DEADSPACE")&&Match(@"Electronic.*Arts|Rights.*Reserved")
             ||compact.Contains("OVERKILL")&&Match(@"PRESS.*(?:A|BUTTON)")
+            ||compact.Contains("RESIDENTEVIL")&&compact.Contains("CHRONICLES")&&Match(@"PRESS.*(?:A|BUTTON)|NEW.*GAME|LOAD.*GAME")
             ||Match(@"Story.*Mode")&&Match(@"Challenge|Options")
             ||Match(@"Single.*Player")&&Match(@"Cooperative|Options");
     }
@@ -179,14 +206,14 @@ internal static partial class Program
         return text;
     }
 
-    private static async Task DolphinAction(GameSession session,HMController[] devices,List<GunBinding> players,SimulatedAction action)
+    private static async Task DolphinAction(GameSession session,HMController[] devices,List<GunBinding> players,SimulatedAction action,string scope="dolphin")
     {
         RequireGame(session);int p=action.Player;
         var hardware=StartupControls.Hardware(players[p-1]);
         var tokens=action.Buttons.Select(id=>hardware.Single(h=>h.Id==id).Token??throw new IOException("Missing physical token.")).Distinct().ToArray();
-        if(tokens.Length==0)throw new IOException("No resolved physical input for Dolphin action.");
-        string before=Capture(session,$"dolphin-p{p}-{action.Function}-before");Drain();string? held=null;
-        try {DolphinChord(devices[p-1],tokens);await Delay(requestedHoldMilliseconds??200);held=Capture(session,$"dolphin-p{p}-{action.Function}-held");}
+        if(tokens.Length==0)throw new IOException("No resolved physical input for "+scope+" action.");
+        string before=Capture(session,$"{scope}-p{p}-{action.Function}-before");Drain();string? held=null;
+        try {DolphinChord(devices[p-1],tokens);await Delay(requestedHoldMilliseconds??200);held=Capture(session,$"{scope}-p{p}-{action.Function}-held");}
         finally {DolphinChord(devices[p-1],[]);}
         await Delay(300);var received=Drain();
         bool Match(RawPacket r,GunBinding gun,string token,bool down)=>token.StartsWith("mouse:")
@@ -195,11 +222,11 @@ internal static partial class Program
         bool pressed=tokens.All(t=>received.Any(r=>Match(r,players[p-1],t,true)));
         bool released=tokens.All(t=>received.Any(r=>Match(r,players[p-1],t,false)));
         bool isolated=!tokens.Any(t=>received.Any(r=>Match(r,players[2-p],t,true)));
-        evidence.Add(new {stage="dolphin-action",action.Player,action.Function,action.Expression,action.Buttons,tokens,rawPressed=pressed,rawReleased=released,isolated,before,heldFrame=held,after=Capture(session,$"dolphin-p{p}-{action.Function}-after"),gameResponse="requires-visual-review"});
-        if(!pressed||!released||!isolated)throw new IOException("Dolphin action has incomplete or cross-player RawInput events.");
+        evidence.Add(new {stage=scope+"-action",action.Player,action.Function,action.Expression,action.Buttons,tokens,rawPressed=pressed,rawReleased=released,isolated,before,heldFrame=held,after=Capture(session,$"{scope}-p{p}-{action.Function}-after"),gameResponse="requires-visual-review"});
+        if(!pressed||!released||!isolated)throw new IOException(scope+" action has incomplete or cross-player RawInput events.");
     }
 
-    private static void DolphinChord(HMController device,string[] tokens)
+    private static void DolphinChord(HMController device,string[] tokens,int x=16384,int y=16384)
     {
         var keys=new List<HMKey>();HMMouseButtons mouse=0;
         foreach(string token in tokens)
@@ -212,7 +239,7 @@ internal static partial class Program
                 keys.Add((HMKey)usage);
             }
         }
-        device.SubmitMouse(new HMMouseState{X=16384,Y=16384,Buttons=mouse});
+        device.SubmitMouse(new HMMouseState{X=x,Y=y,Buttons=mouse});
         device.SubmitKeyboard(HMKeyModifiers.None,keys.ToArray());
     }
 }
