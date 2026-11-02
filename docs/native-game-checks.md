@@ -188,3 +188,24 @@ The [0.3.69 package](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.
 passed [779 Windows core checks and 28 Input Lab checks](https://github.com/sthamann/deadeye-arcade/actions/runs/41412490642).
 Its installer checksum was checked before installation, and the installed
 assembly reports `0.3.69+478d62f8d213b092278085a30a5e4078f61da91c`.
+
+The [0.3.70 package](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.70)
+passed [782 Windows core checks and 32 Input Lab checks](https://github.com/sthamann/deadeye-arcade/actions/runs/41426337445).
+The published installer and Input Lab archive passed checksum verification before
+installation. The installed assembly reports
+`0.3.70+8cff6f4924a7f5f039e49e3acc265d5e9890561b`, and the installed Input Lab
+self-check passed all 32 cases.
+
+Starting from Silent Hill's previous Windowed=0 setting, the installed app changed
+that field to 1 through its normal preparation path. It retained the existing
+cursor setting and both physical Vyper assignments. With Remote Desktop
+disconnected, the native check observed the renderer for 120 seconds, opened and
+resumed the game menu, and removed all owned game processes on exit. Reviewed
+captures show the menu and the resumed attract sequence filling the display.
+The separate virtual replay above provides the observed two-player ammunition
+changes; this package check does not itself establish hits or aiming accuracy.
+
+After this final check, the library hash was unchanged and the frontend window
+was observed again. Current and saved physical display modes were both
+3840 x 2160 at 60 Hz. These are bounded technical checks, not complete playthroughs
+or physical gun certification.
