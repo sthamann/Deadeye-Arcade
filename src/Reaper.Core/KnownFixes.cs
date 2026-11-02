@@ -14,7 +14,7 @@ public record FixPackage(string Id, string Url, string Sha256, int MaxBytes);
 // Reviewed rules only: the catalog cannot contain scripts, executable commands or arbitrary downloads.
 public static class KnownFixes
 {
-    public const int Version = 6;
+    public const int Version = 7;
     public static FixRule[] Catalog { get; } = LoadCatalog();
     public static readonly FixPackage OpenAl = new("openal-soft-1.25.2",
         "https://openal-soft.org/openal-binaries/openal-soft-1.25.2-bin.zip",
@@ -43,11 +43,13 @@ public static class KnownFixes
         && new FileInfo(path).Length <= package.MaxBytes && Hash(path).Equals(package.Sha256, StringComparison.OrdinalIgnoreCase);
 
     public static async Task<FixReport> Apply(IEnumerable<GameEntry> entries, string data, bool administrator,
-        Func<FixPackage, Task<string>> preparePackage)
+        Func<FixPackage, Task<string>> preparePackage, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var games = entries.ToArray(); var findings = new List<FixFinding>();
         foreach (var game in games)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
                 if (game.Source == "teknoparrot" && File.Exists(game.SourcePath))
@@ -59,6 +61,8 @@ public static class KnownFixes
                     Add(game, "portable-paths", "repaired", "Emulatorpfade oder Hersteller-Metadaten mit Sicherung repariert.", [game.Source == "teknoparrot" ? game.SourcePath : Path.GetFileName(game.Executable).StartsWith("pcsx2",StringComparison.OrdinalIgnoreCase) ? Path.Combine(game.WorkingDirectory,"inis","PCSX2.ini") : Path.Combine(game.WorkingDirectory,"EMULATOR.INI")]);
                 if(Hod3Presentation.Configure(game))
                     Add(game,"hod3-presentation","repaired","Den hängenden exklusiven Vollbildmodus der geprüften HOTD-III-Version durch randloses Vollbild ersetzt.",[Hod3Presentation.ConfigPath(game),Hod3Presentation.ConfigPath(game)+".before-deadeye-presentation"]);
+                if(TeknoDisplaySetup.ConfigureSilentHill(game))
+                    Add(game,"silent-hill-presentation","repaired","Silent Hill auf den geprüften Fenstermodus vorbereitet; Auflösung und Gun-Belegung beibehalten.",[game.SourcePath,game.SourcePath+".before-deadeye-display-fix"]);
                 foreach (var issue in LaunchRules.Issues(game))
                     Add(game, "missing-files", "needs-action", issue, []);
                 if (game.Source == "teknoparrot" && File.Exists(game.SourcePath))
@@ -76,12 +80,15 @@ public static class KnownFixes
                         Add(game, "pcsx2-shared-pointer", "needs-action", "Beide Guncon2-Ports teilen denselben Mauszeiger. Zwei unabhängige Spieler sind damit nicht eingerichtet.", [ini]);
                 }
                 await RepairOpenAl(game);
+                cancellationToken.ThrowIfCancellationRequested();
                 await RepairHypseus(game);
+                cancellationToken.ThrowIfCancellationRequested();
                 await RepairHod2Graphics(game);
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException or System.Xml.XmlException or HttpRequestException or TaskCanceledException or InvalidDataException or ArgumentException)
-            { Add(game, "repair-error", "needs-action", error.Message, []); }
+            { cancellationToken.ThrowIfCancellationRequested(); Add(game, "repair-error", "needs-action", error.Message, []); }
         }
+        cancellationToken.ThrowIfCancellationRequested();
         var report = new FixReport(DateTimeOffset.Now, Version, games.Length, findings.ToArray());
         Directory.CreateDirectory(data);
         string destination = Path.Combine(data, games.Length == 1 ? "fixes-" + Regex.Replace(games[0].Id, "[^a-zA-Z0-9_-]", "_") + ".json" : "fixes-report.json");
@@ -126,6 +133,7 @@ public static class KnownFixes
                 var (binary, image) = required[0];
                 string local = Path.Combine(folder, "OpenAL32.dll");
                 string archive = await preparePackage(OpenAl);
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!ValidPackage(archive, OpenAl)) throw new InvalidDataException(I18n.T("Das Reparaturpaket stimmt nicht mit der geprüften Herstellerdatei überein."));
                 using var zip = ZipFile.OpenRead(archive);
                 string prefix = "openal-soft-1.25.2-bin/";
@@ -152,6 +160,7 @@ public static class KnownFixes
             { Add(game, "hypseus-assets", "needs-action", "Hypseus-Version weicht vom geprüften Paket ab. Passende Zusatzdateien müssen zuerst bestätigt werden.", [game.Executable]); return; }
             if (HypseusAssets.All(relative => File.Exists(Path.Combine(game.WorkingDirectory, relative)))) return;
             string archive = await preparePackage(Hypseus);
+            cancellationToken.ThrowIfCancellationRequested();
             if (!ValidPackage(archive, Hypseus)) throw new InvalidDataException(I18n.T("Das Reparaturpaket stimmt nicht mit der geprüften Herstellerdatei überein."));
             using var zip = ZipFile.OpenRead(archive);
             const string prefix = "Hypseus Singe/";
@@ -180,6 +189,7 @@ public static class KnownFixes
             if(!File.Exists(dll))
             {
                 string package=await preparePackage(DDrawCompat);
+                cancellationToken.ThrowIfCancellationRequested();
                 if(!ValidPackage(package,DDrawCompat))throw new InvalidDataException(I18n.T("Das Reparaturpaket stimmt nicht mit der geprüften Herstellerdatei überein."));
                 using var zip=ZipFile.OpenRead(package);
                 var entry=zip.GetEntry("ddraw.dll")??throw new InvalidDataException("DDrawCompat component missing.");

@@ -166,5 +166,13 @@
     "scope": "Reviewed Hotd4ex ElfLdr2 profile, single physical Windows output with a supported 1360 x 768, 60 Hz mode",
     "source": "https://github.com/sthamann/deadeye-arcade",
     "verification": "Temporarily select the native viewport, retain the saved desktop mode and restore the original current mode on session disposal. Back up the windowed profile. Other games, remote sessions and multiple displays are excluded. Presentation evidence does not certify aiming or shots."
+  },
+  {
+    "id": "silent-hill-presentation",
+    "name": "Silent Hill Anzeige und Spielmenü",
+    "mode": "automatic",
+    "scope": "Exact SilentHill vendor profile with one existing Windowed field",
+    "source": "https://github.com/sthamann/deadeye-arcade",
+    "verification": "Library repair and ordinary launch use the same reviewed Windowed=1 correction. Preserve resolution and both gun assignments; retain the original profile backup. Ambiguous fields remain unchanged and require review. Native menu/resume and virtual ammunition changes were observed; full aiming accuracy and physical gameplay remain separate."
   }
 ]

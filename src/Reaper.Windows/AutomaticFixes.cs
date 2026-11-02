@@ -7,25 +7,27 @@ namespace Reaper.Windows;
 internal static class AutomaticFixes
 {
     private static readonly SemaphoreSlim gate = new(1, 1);
-    public static async Task<FixReport> Run(IEnumerable<GameEntry> games, string data)
+    public static async Task<FixReport> Run(IEnumerable<GameEntry> games, string data,CancellationToken cancellationToken=default)
     {
-        await gate.WaitAsync();
+        await gate.WaitAsync(cancellationToken);
         try
         {
             using var identity = WindowsIdentity.GetCurrent();
             bool admin = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
             var entries=games.ToArray();
-            var report=await Task.Run(() => KnownFixes.Apply(entries, data, admin, package => Prepare(package, data)));
-            var controls=await ControlMaintenance.Run(entries,data);
-            var findings=report.Findings.Concat(controls.Games.Where(g=>g.Status!="mapping-checked").Select(g=>new FixFinding(g.GameId,g.Title,"control-completeness","needs-action",
-                string.Join(" · ",g.Players.SelectMany(p=>p.Issues.Select(i=>"P"+p.Player+": "+i)).DefaultIfEmpty(I18n.T("Vollständige Spielbelegung benötigt eine Titelprüfung."))),[Path.Combine(data,"controls-audit.json")]))).ToArray();
+            var report=await Task.Run(() => KnownFixes.Apply(entries, data, admin, package => Prepare(package, data,cancellationToken),cancellationToken),cancellationToken);
+            var controls=await ControlMaintenance.Run(entries,data,cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            var selected=entries.Select(g=>g.Id).ToHashSet();
+            var findings=report.Findings.Concat(controls.Games.Where(g=>selected.Contains(g.GameId)&&g.Status!="mapping-checked").Select(g=>new FixFinding(g.GameId,g.Title,"control-completeness","needs-action",
+                string.Join(" · ",g.Players.SelectMany(p=>p.Issues.Select(i=>"P"+p.Player+": "+i)).DefaultIfEmpty(string.IsNullOrWhiteSpace(g.Note)?I18n.T("Vollständige Spielbelegung benötigt eine Titelprüfung."):g.Note)),[Path.Combine(data,"controls-audit.json")]))).ToArray();
             var combined=report with {Findings=findings};
             File.WriteAllText(Path.Combine(data,"fix-report.json"),System.Text.Json.JsonSerializer.Serialize(combined,JsonDefaults.Options));
             return combined;
         }
         finally { gate.Release(); }
     }
-    private static async Task<string> Prepare(FixPackage package, string data)
+    private static async Task<string> Prepare(FixPackage package, string data,CancellationToken cancellationToken)
     {
         string folder = Path.Combine(data, "repair-packages"); Directory.CreateDirectory(folder);
         string file = Path.Combine(folder, package.Id + ".zip");
@@ -35,7 +37,8 @@ internal static class AutomaticFixes
         {
             using var handler = new HttpClientHandler { AllowAutoRedirect = false };
             using var http = new HttpClient(handler) { Timeout = TimeSpan.FromMinutes(2) };
-            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeout.CancelAfter(TimeSpan.FromMinutes(2));
             Uri url = new(package.Url);
             for (int redirects = 0; ; redirects++)
             {

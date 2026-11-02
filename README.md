@@ -127,6 +127,9 @@ current bindings, including per-game overrides.
 Deadeye opens using the latest saved check results. It checks and repairs the
 selected game before launch; a full library repair runs when you choose it in
 Settings. Aim and button tests are optional and never required to launch a game.
+The regular library repair also applies the reviewed Silent Hill display fix.
+Failed input preparation stays visible with its cause until a successful recheck.
+Cancelling launch also cancels repair downloads and MAME metadata queries.
 
 At launch, Deadeye reads the selected physical guns and prepares supported game
 input files. Stale relative-mouse presets are detected and switched to

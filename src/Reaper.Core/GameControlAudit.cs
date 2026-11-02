@@ -145,11 +145,19 @@ public static class GameControlAudit
             .Where(g=>g.Select(r=>r.SourceKey).Where(k=>!string.IsNullOrEmpty(k)).Distinct().Count()>1 && g.Select(r=>r.Function).Distinct().Count()>1)
             .Select(g=>string.Join(" / ",g.Select(r=>r.Function).Distinct())).ToArray();
     }
-    public static ControlAuditReport Save(IEnumerable<GameEntry> games,string data,IEnumerable<GunBinding> bindings,IEnumerable<InputDevice>? devices=null,bool merge=false)
+    public static ControlAuditReport Save(IEnumerable<GameEntry> games,string data,IEnumerable<GunBinding> bindings,IEnumerable<InputDevice>? devices=null,bool merge=false,IReadOnlyDictionary<string,string>? preparationErrors=null)
     {
         var guns=bindings.ToArray();var inputs=devices?.ToArray();
         var report=new ControlAuditReport(DateTimeOffset.UtcNow,games.Select(game=> {
-            try { return Read(game,data,guns,inputs); }
+            try {
+                var review=Read(game,data,guns,inputs);
+                if(preparationErrors?.TryGetValue(game.Id,out string? error)==true)
+                {
+                    string issue=I18n.T("Automatische Eingabevorbereitung fehlgeschlagen: ")+error;
+                    return review with {Status="needs-action",Note=issue,Players=review.Players.Select(p=>p with {Status="needs-action",Issues=p.Issues.Append(issue).Distinct().ToArray()}).ToArray()};
+                }
+                return review;
+            }
             catch(Exception e) when(e is IOException or UnauthorizedAccessException or ArgumentException or System.Xml.XmlException) {
                 return new GameControlReview(game.Id,game.Title,game.Source,"needs-action",[],e.Message);
             }

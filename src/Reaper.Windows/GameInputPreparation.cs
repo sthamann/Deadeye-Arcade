@@ -14,8 +14,9 @@ internal sealed class GameInputPreparation : IAsyncDisposable
     public DolphinGunBridge? Bridge { get; private set; }
     private GameInputPreparation(string data) => this.data = data;
 
-    public static async Task<GameInputPreparation> Prepare(GameEntry game, string data, IEnumerable<GunBinding> bindings)
+    public static async Task<GameInputPreparation> Prepare(GameEntry game, string data, IEnumerable<GunBinding> bindings,CancellationToken cancellationToken=default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var setup = new GameInputPreparation(data);
         try
         {
@@ -24,7 +25,7 @@ internal sealed class GameInputPreparation : IAsyncDisposable
             setup.Players = GunConnections.ForConfiguration(bindings, raw.Devices, GunDiscovery.Scan(raw.Devices));
             if(game.Source=="mame")
             {
-                if(MameControls.Metadata(game,data) is null)await MameMetadata.Prepare(game,data);
+                if(MameControls.Metadata(game,data) is null)await MameMetadata.Prepare(game,data,cancellationToken);
                 MameControls.Configure(game,data,setup.Players);
             }
             bool indexAvailable = GunConnections.CanIndexMice(setup.Players, raw.Devices);
@@ -39,7 +40,7 @@ internal sealed class GameInputPreparation : IAsyncDisposable
                     raw.Devices.ToDictionary(d => d.Id, d => InputDeviceNames.Name(d.Id) ?? (d.Kind == "mouse" ? "Mouse" : "Keyboard"), StringComparer.OrdinalIgnoreCase));
             if (DolphinSetup.IsDolphin(game) && setup.Players.Any(b => b.Player == 1 && DolphinSetup.Supports(b)))
             {
-                string pack = await DolphinAccuracyPackage.Prepare(data);
+                string pack = await DolphinAccuracyPackage.Prepare(data,cancellationToken);
                 if(DolphinSetup.RequiresBridge(setup.Players)) setup.Bridge=new(setup.Players);
                 if (!DolphinSetup.Configure(game, pack, setup.Players,setup.Bridge?.Port))
                 {
@@ -49,6 +50,7 @@ internal sealed class GameInputPreparation : IAsyncDisposable
             }
             foreach (var binding in setup.Players.Where(b => b.SystemId == "rs3" && b.SerialPort is not null))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
                     await setup.serial.Command(binding.SerialPort!, binding.DevicePlayer,
@@ -64,6 +66,7 @@ internal sealed class GameInputPreparation : IAsyncDisposable
             }
             foreach (var binding in setup.Players.Where(b => b.SystemId == "blamcon" && b.SerialPort is not null))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var gun = GunDiscovery.Scan(raw.Devices).Single(g => GunAssignments.Matches(binding,g));
                 setup.blamcons.Add((gun,binding.Blamcon??new()));
                 try { await BlamconSerial.Send(gun,BlamconSetup.Configure(GameGunProfiles.Vyper(game,binding))); }

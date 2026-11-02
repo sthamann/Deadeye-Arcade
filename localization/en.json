@@ -993,5 +993,9 @@
   "HOTD III Vollbildmodus": "HOTD III fullscreen mode",
   "Den hängenden exklusiven Vollbildmodus der geprüften HOTD-III-Version durch randloses Vollbild ersetzt.": "Replaced the unresponsive exclusive fullscreen mode of the reviewed HOTD III build with borderless fullscreen.",
   "Windows konnte den vorherigen Bildschirmmodus nicht wiederherstellen (Code {0}).": "Windows could not restore the previous display mode (code {0}).",
-  "Bombe": "Bomb"
+  "Bombe": "Bomb",
+  "Das Silent-Hill-Profil enthält mehrere Windowed-Felder. Die Anzeigeeinstellung muss geprüft werden; das Profil bleibt erhalten.": "The Silent Hill profile has multiple Windowed fields. Review its display setting; the profile has been preserved.",
+  "Silent Hill auf den geprüften Fenstermodus vorbereitet; Auflösung und Gun-Belegung beibehalten.": "Prepared Silent Hill for the reviewed windowed mode; resolution and gun bindings were preserved.",
+  "Automatische Eingabevorbereitung fehlgeschlagen: ": "Automatic input preparation failed: ",
+  "Silent Hill Anzeige und Spielmenü": "Silent Hill display and game menu"
 }

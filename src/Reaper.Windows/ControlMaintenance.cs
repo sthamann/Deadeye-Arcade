@@ -3,22 +3,27 @@ namespace Reaper.Windows;
 
 internal static class ControlMaintenance
 {
-    public static async Task<ControlAuditReport> Run(IEnumerable<GameEntry> entries,string data)
+    public static async Task<ControlAuditReport> Run(IEnumerable<GameEntry> entries,string data,CancellationToken cancellationToken=default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var games=entries.ToArray();var library=new LibraryStore(data).Load();
+        var failures=new Dictionary<string,string>();
         using var raw=new RawInput();raw.Refresh();
         var players=GunConnections.ForConfiguration(library.Bindings,raw.Devices,GunDiscovery.Scan(raw.Devices));
         string? pack=null;
         if(games.Any(DolphinSetup.IsDolphin) && players.Any(p=>p.Player==1 && DolphinSetup.Supports(p)))
-            try {pack=await DolphinAccuracyPackage.Prepare(data);}
+            try {pack=await DolphinAccuracyPackage.Prepare(data,cancellationToken);}
             catch(Exception e) when(e is IOException or HttpRequestException or TaskCanceledException) {
+                cancellationToken.ThrowIfCancellationRequested();
+                foreach(var game in games.Where(DolphinSetup.IsDolphin))failures[game.Id]=e.Message;
                 File.AppendAllText(Path.Combine(data,"game-input.log"),$"{DateTimeOffset.Now:o} Accuracy package unavailable: {e.Message}\n");
             }
         foreach(var game in games)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                if(game.Source=="mame")await MameMetadata.Prepare(game,data);
+                if(game.Source=="mame")await MameMetadata.Prepare(game,data,cancellationToken);
                 var files=KnownFixes.InputFiles(game,data);var before=KnownFixes.Snapshot(files);
                 if(game.Source=="mame")MameControls.Configure(game,data,players);
                 if(game.Source=="teknoparrot") TeknoGunSetup.Configure(game,players);
@@ -32,9 +37,12 @@ internal static class ControlMaintenance
                 KnownFixes.RecordChanges(game,data,"control-completeness",before,KnownFixes.InputFiles(game,data));
             }
             catch(Exception e) when(e is IOException or UnauthorizedAccessException or ArgumentException or System.Xml.XmlException) {
+                cancellationToken.ThrowIfCancellationRequested();
+                failures[game.Id]=e.Message;
                 File.AppendAllText(Path.Combine(data,"game-input.log"),$"{DateTimeOffset.Now:o} Control repair for {game.Title}: {e.Message}\n");
             }
         }
-        return GameControlAudit.Save(games,data,library.Bindings,raw.Devices,merge:true);
+        cancellationToken.ThrowIfCancellationRequested();
+        return GameControlAudit.Save(games,data,library.Bindings,raw.Devices,merge:true,preparationErrors:failures);
     }
 }

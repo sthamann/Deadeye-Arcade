@@ -1,8 +1,9 @@
 # Automatic repairs
 
 Deadeye carries reviewed setup knowledge with the application. It checks the
-library at startup, after import and when **Check and repair library** is selected.
-It also rechecks the selected game before dependency validation and launch.
+selected game before dependency validation and launch. A full library check runs
+after import and when **Check and repair library** is selected. Startup loads the
+last saved results so a large collection cannot delay access to the frontend.
 Checks run in the background so the native exit button remains responsive.
 
 Open **Settings → Automatic repairs** to see detected problems, repairs from the
@@ -21,6 +22,7 @@ English and German are supported. A second check leaves healthy files unchanged.
 | Supported Dolphin accuracy profiles | Matches the disc region to the reviewed accuracy package, preserves learned aiming offsets and prepares independent RS3 DSU channels. Extraction uses Hybrid Ubershaders. |
 | Installed multiplayer plugins | Configures recognized HOTD 2: Remake and installed Blue Estate patch inputs according to their actual device format. Unknown plugin versions retain their own workflow. |
 | Supported game presentation | Uses native resolution and the normalized fullscreen route for absolute RawInput guns in supported Aliens profiles, avoiding a scaled-desktop conversion that can confine aim to a quarter of the screen. Relative input keeps its windowed route. Model 2 presentation is also prepared; changed settings are recorded. |
+| Silent Hill Start input and menu resume | The matching SilentHill vendor profile uses the reviewed windowed route. Library repair and launch share this correction, retain resolution and gun bindings, and keep the original backup. Duplicate vendor fields require review. |
 | Old HOTD 4 Special loader | Uses the matching installed ElfLdr2 vendor template for this exact game. Retains user bindings, game path and existing settings; adds only missing defaults. Keeps the original profile backup. |
 | Incomplete Lindbergh ASCII copies | Keeps sibling `fs` and `drv` data beside `elf/*.elf` when preparing Unicode game paths. Revisits earlier prepared paths, preserves changed settings and game-created saves during the upgrade, and retains original game files. |
 | Existing Lindbergh shared libraries | For the specific supported ElfLdr2 profiles, copies only absent, valid ELF libraries from the installed game into the loader search folder. |
@@ -35,6 +37,19 @@ Microsoft runtime inspection remains integrated; available installers come from
 Microsoft and are checked for architecture and signature. Windows consent,
 installer license prompts, vendor login and physical calibration can still require
 user interaction.
+
+Input preparation failures remain visible in the saved control audit and the
+repair findings. An existing readable profile cannot hide a failed update or
+unavailable accuracy package. A successful later check clears that game's error
+and retains the other library audits. A selected-game check reports only that
+game's findings, even when the saved audit also contains other titles.
+
+Cancelling a launch propagates to queued repair checks, official repair-package
+and Dolphin accuracy downloads, and MAME metadata queries. Temporary repair
+downloads are removed, and a cancelled operation is not labelled as a completed
+repair or a new repair failure. MAME query cancellation stops its query process.
+Ordinary file operations and gun settings restoration finish through the existing
+cleanup path.
 
 Deadeye does not replace game binaries, bypass licenses, restore quarantined
 executables or disable endpoint protection. A profile correction establishes a
@@ -78,10 +93,11 @@ With the frontend closed, the existing app also provides:
 
 ```powershell
 ReaperArcade.exe --repair-library
+ReaperArcade.exe --repair-game <game-id>
 ReaperArcade.exe --inspect-display
 ```
 
-## Verification for 0.3.22
+## Verification
 
 Core checks cover real path repair with backup, repeat-run idempotence, privilege
 and vendor-access detection, shared versus independent PCSX2 pointers, package
@@ -90,6 +106,10 @@ entries, actual changed-file hashes and ambiguous OpenAL architectures. Optional
 checks exercise both exact official archives on fresh temporary installations.
 The browser checks cover the native repair command, findings/history, both
 languages and the distinction between remote and physical display modes.
+Additional regression checks exercise Silent Hill through the normal library
+repair, unchanged repeat runs, ambiguous fields, cancelled package preparation,
+failed input preparation over an otherwise complete profile, and successful
+recovery without losing unrelated audits.
 
 ## Beetle Saturn gun actions
 

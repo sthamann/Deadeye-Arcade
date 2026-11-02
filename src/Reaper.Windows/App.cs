@@ -51,6 +51,12 @@ public static class App
                     AutomaticFixes.Run(state.Games, data).GetAwaiter().GetResult();
                     return;
                 }
+                if (args is ["--repair-game",var repairId])
+                {
+                    var game=state.Games.Single(g=>g.Id==repairId);
+                    AutomaticFixes.Run([game],data).GetAwaiter().GetResult();
+                    return;
+                }
                 if (args.Length == 1 && args[0] == "--audit-controls")
                 {
                     using var raw = new RawInput(); raw.Refresh();

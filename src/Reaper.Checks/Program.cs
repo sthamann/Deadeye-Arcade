@@ -3,6 +3,13 @@ using System.Text;
 using System.Xml.Linq;
 using Reaper.Core;
 
+if(args is ["deadeye_metadata_fixture","-listxml"])
+{
+    File.WriteAllText("metadata-query.pid",Environment.ProcessId.ToString());
+    await Task.Delay(TimeSpan.FromMinutes(1));
+    return;
+}
+
 if(args is ["--simulate-controls",var simulationData])
 {
     var simulationState=new LibraryStore(simulationData).Load();
@@ -13,6 +20,24 @@ if(args is ["--simulate-controls",var simulationData])
 }
 
 int checks = 0;
+string metadataCancellationRoot=Path.Combine(Path.GetTempPath(),"deadeye-query-cancellation-"+Guid.NewGuid().ToString("N"));
+Directory.CreateDirectory(metadataCancellationRoot);
+try
+{
+    using var stopQuery=new CancellationTokenSource();
+    var queryGame=new GameEntry("metadata-cancellation","Query fixture","MAME",Environment.ProcessPath!,["deadeye_metadata_fixture"],metadataCancellationRoot,"mame","");
+    Task query=Reaper.Windows.MameMetadata.Prepare(queryGame,metadataCancellationRoot,stopQuery.Token);
+    string pidFile=Path.Combine(metadataCancellationRoot,"metadata-query.pid");
+    var deadline=DateTime.UtcNow.AddSeconds(5);
+    while(!File.Exists(pidFile)&&!query.IsCompleted&&DateTime.UtcNow<deadline)await Task.Delay(25);
+    Check(File.Exists(pidFile),"A real metadata query process starts before cancellation is exercised");
+    int queryPid=int.Parse(File.ReadAllText(pidFile));stopQuery.Cancel();bool queryWasCancelled=false;
+    try {await query.WaitAsync(TimeSpan.FromSeconds(8));}catch(OperationCanceledException){queryWasCancelled=true;}
+    bool queryAlive=false;
+    try {using var process=System.Diagnostics.Process.GetProcessById(queryPid);queryAlive=!process.HasExited;}catch(ArgumentException) { }
+    Check(queryWasCancelled&&!queryAlive&&!File.Exists(MameControls.MetadataPath(queryGame,metadataCancellationRoot)),"Cancelling a live MAME metadata query stops its process and does not publish partial metadata");
+}
+finally {Directory.Delete(metadataCancellationRoot,true);}
 var integrityFixture=CodeIntegrityEvent.Parse("<Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'><System><EventID>3077</EventID></System><EventData><Data Name='File Name'>\\Device\\HarddiskVolume3\\Games\\Test\\game.dll</Data><Data Name='Process Name'>\\Device\\HarddiskVolume3\\Games\\Test\\game.exe</Data><Data Name='PolicyID'>policy-version</Data><Data Name='PolicyGUID'>{0283ac0f-fff1-49ae-ada1-8a933130cad6}</Data><Data Name='Status'>0xc0e90002</Data></EventData></Event>");
 Check(integrityFixture?.File.EndsWith("game.dll")==true && integrityFixture.Process.EndsWith("game.exe") && integrityFixture.Policy=="{0283ac0f-fff1-49ae-ada1-8a933130cad6}" && integrityFixture.Status=="0xc0e90002","Native Code Integrity fields with spaces retain the blocked file, process, real policy GUID and NT status");
 Check(CodeIntegrityEvent.Parse("<Event><System><EventID>3077</EventID></System><EventData><Data Name='FileNameBuffer'>blocked.exe</Data><Data Name='ProcessNameBuffer'>loader.exe</Data></EventData></Event>")?.File=="blocked.exe" && CodeIntegrityEvent.Parse("<Event><System><EventID>3076</EventID></System><EventData><Data Name='File Name'>audit-only.exe</Data></EventData></Event>") is null,"Alternative event field names work while audit-only events cannot become enforcement blocks");
@@ -382,6 +407,26 @@ try
     string history=File.ReadAllText(Path.Combine(repairRoot,"fixes-history.jsonl"));
     var again=KnownFixes.Apply([repairGame],repairRoot,true,NoDownload).GetAwaiter().GetResult();
     Check(!again.Findings.Any(f=>f.Status=="repaired"||f.RuleId=="administrator") && File.ReadAllText(Path.Combine(repairRoot,"fixes-history.jsonl"))==history, "A second check is idempotent, records no duplicate repair and reads the current privilege context");
+    using(var cancelledRepair=new CancellationTokenSource())
+    {
+        cancelledRepair.Cancel();bool repairWasCancelled=false;string cancelledData=Path.Combine(repairRoot,"cancelled");
+        try {await KnownFixes.Apply([repairGame],cancelledData,true,NoDownload,cancelledRepair.Token);}catch(OperationCanceledException){repairWasCancelled=true;}
+        Check(repairWasCancelled&&!Directory.Exists(cancelledData),"Cancelling before a repair creates no report and never starts a package download");
+    }
+    using(var downloadingRepair=new CancellationTokenSource())
+    {
+        string folder=Path.Combine(repairRoot,"cancel-package");Directory.CreateDirectory(folder);
+        string exe=Path.Combine(folder,"fixture.exe");WriteNative(exe,false,"OpenAL32.dll");bool repairWasCancelled=false;
+        try {await KnownFixes.Apply([repairGame with{Source="custom",Executable=exe,WorkingDirectory=folder}],folder,true,_=>{downloadingRepair.Cancel();return Task.FromCanceled<string>(downloadingRepair.Token);},downloadingRepair.Token);}catch(OperationCanceledException){repairWasCancelled=true;}
+        Check(repairWasCancelled&&!File.Exists(Path.Combine(folder,"OpenAL32.dll"))&&!File.Exists(Path.Combine(folder,"fixes-"+repairGame.Id+".json")),"Cancelling a repair download propagates as cancellation without installing a file or reporting a repair error");
+    }
+    using(var preparedRepair=new CancellationTokenSource())
+    {
+        string folder=Path.Combine(repairRoot,"cancel-prepared-package");Directory.CreateDirectory(folder);
+        string exe=Path.Combine(folder,"fixture.exe");WriteNative(exe,false,"OpenAL32.dll");bool repairWasCancelled=false;
+        try {await KnownFixes.Apply([repairGame with{Source="custom",Executable=exe,WorkingDirectory=folder}],folder,true,_=>{preparedRepair.Cancel();return Task.FromResult("unused-package.zip");},preparedRepair.Token);}catch(OperationCanceledException){repairWasCancelled=true;}
+        Check(repairWasCancelled&&!File.Exists(Path.Combine(folder,"OpenAL32.dll")),"Cancellation after package preparation is checked before package validation or installation");
+    }
     string sharedPointer="[USB1]\nType = guncon2\nguncon2_Pointer = Pointer-0\n[USB2]\nType = guncon2\nguncon2_Pointer = Pointer-0\n";
     Check(KnownFixes.SharedPcsxPointer(sharedPointer) && !KnownFixes.SharedPcsxPointer(sharedPointer.Replace("[USB2]\nType = guncon2\nguncon2_Pointer = Pointer-0","[USB2]\nType = guncon2\nguncon2_Pointer = Pointer-1")), "PCSX2 detection identifies a shared two-player pointer without flagging independent ports");
     Check(!KnownFixes.SharedPcsxPointer(sharedPointer.Replace("[USB2]\nType = guncon2","[USB2]\nType = none")) && !KnownFixes.SharedPcsxPointer("[USB1]\nType=guncon2"), "A single configured gun or missing pointer is not evidence of a shared two-player pointer");
@@ -1010,6 +1055,16 @@ RButton::y
     Check(TeknoDisplaySetup.Configure(silentDisplayGame,3840,2160)&&!TeknoDisplaySetup.Configure(silentDisplayGame,3840,2160)&&File.ReadAllText(silentDisplay+".before-deadeye-display-fix")==silentBefore,"Silent Hill windowed setup is repeatable and retains an exact original profile backup");
     var silentDisplayXml=XDocument.Load(silentDisplay);
     Check(silentDisplayXml.Descendants("FieldValue").Select(e=>e.Value).SequenceEqual(new[]{"1","1920","1080"})&&silentDisplayXml.Root!.Element("JoystickButtons")!.Value=="keep-both-guns","Silent Hill presentation changes only the vendor windowed mode and preserves resolution and both players' controls");
+    File.WriteAllText(silentDisplay,silentBefore);
+    var silentRepair=await KnownFixes.Apply([silentDisplayGame],repairRoot,true,NoDownload);
+    Check(silentRepair.Findings.Any(f=>f.RuleId=="silent-hill-presentation"&&f.Status=="repaired") && XDocument.Load(silentDisplay).Descendants("FieldValue").Select(e=>e.Value).SequenceEqual(new[]{"1","1920","1080"}),"The ordinary library repair fixes Silent Hill without a display measurement or game launch");
+    string silentRepairHash=KnownFixes.Hash(silentDisplay),silentRepairHistory=File.ReadAllText(Path.Combine(repairRoot,"fixes-history.jsonl"));
+    var silentAgain=await KnownFixes.Apply([silentDisplayGame],repairRoot,true,NoDownload);
+    Check(!silentAgain.Findings.Any(f=>f.RuleId=="silent-hill-presentation") && KnownFixes.Hash(silentDisplay)==silentRepairHash && File.ReadAllText(Path.Combine(repairRoot,"fixes-history.jsonl"))==silentRepairHistory,"Healthy Silent Hill repair neither rewrites the profile nor adds duplicate history");
+    var ambiguousSilent=XDocument.Parse(silentBefore);ambiguousSilent.Root!.Element("ConfigValues")!.Add(new XElement(ambiguousSilent.Descendants("FieldInformation").First()));ambiguousSilent.Save(silentDisplay);
+    string ambiguousSilentHash=KnownFixes.Hash(silentDisplay);
+    var ambiguousRepair=await KnownFixes.Apply([silentDisplayGame],repairRoot,true,NoDownload);
+    Check(ambiguousRepair.Findings.Any(f=>f.RuleId=="repair-error"&&f.Status=="needs-action")&&KnownFixes.Hash(silentDisplay)==ambiguousSilentHash&&!TeknoDisplaySetup.Supports(silentDisplayGame),"Ambiguous Silent Hill vendor fields produce an actionable finding without modifying the profile or guessing its renderer mode");
     File.WriteAllText(silentDisplay,silentBefore.Replace("<EmulationProfile>SilentHill</EmulationProfile>","<EmulationProfile>OtherGame</EmulationProfile>"));
     Check(!TeknoDisplaySetup.Supports(silentDisplayGame)&&!TeknoDisplaySetup.Configure(silentDisplayGame,3840,2160),"An unrelated game renamed SilentHill cannot inherit the display repair");
     string exDisplayProfile=Path.Combine(root,"ex-display.xml");
@@ -1285,6 +1340,15 @@ RButton::y
     GameControlAudit.Save([repair],root,specialGuns,merge:true);
     var storedAudit=System.Text.Json.JsonSerializer.Deserialize<ControlAuditReport>(File.ReadAllText(Path.Combine(root,"controls-audit.json")),JsonDefaults.Options)!;
     Check(storedAudit.Games.Any(g=>g.GameId==deadspace.Id) && storedAudit.Games.Any(g=>g.GameId==repair.Id),"A launch-time controls audit retains other library entries instead of erasing their checks");
+    DolphinSetup.Configure(deadspace,pack,[p1,p2],26761);
+    Check(GameControlAudit.Read(deadspace,root,[p1,p2]).Status=="mapping-checked","The control preparation failure fixture starts with a complete readable profile");
+    var failedPreparation=GameControlAudit.Save([deadspace],root,[p1,p2],merge:true,preparationErrors:new Dictionary<string,string>{{deadspace.Id,"fixture write denied"}});
+    var failedReview=failedPreparation.Games.Single(g=>g.GameId==deadspace.Id);
+    Check(failedReview.Status=="needs-action"&&failedReview.Note.Contains("fixture write denied")&&failedReview.Players.All(p=>p.Status=="needs-action"&&p.Issues.Any(i=>i.Contains("fixture write denied"))),"A failed automatic input preparation cannot be hidden by an otherwise complete old profile");
+    var noPlayerFailure=GameControlAudit.Save([deadspace],root,[],merge:true,preparationErrors:new Dictionary<string,string>{{deadspace.Id,"fixture package unavailable"}}).Games.Single(g=>g.GameId==deadspace.Id);
+    Check(noPlayerFailure.Status=="needs-action"&&noPlayerFailure.Note.Contains("fixture package unavailable")&&noPlayerFailure.Players.Length==0,"The real preparation error remains available even without an assigned player");
+    var recoveredPreparation=GameControlAudit.Save([deadspace],root,[p1,p2],merge:true);
+    Check(recoveredPreparation.Games.Single(g=>g.GameId==deadspace.Id).Status=="mapping-checked"&&recoveredPreparation.Games.Any(g=>g.GameId==repair.Id),"A successful recheck clears the preparation error and retains the other library audits");
     string model=Path.Combine(root,"Supermodel.exe");File.WriteAllText(model,"");Directory.CreateDirectory(Path.Combine(root,"Config"));
     string modelIni=Path.Combine(root,"Config","Supermodel.ini");File.WriteAllText(modelIni,"[ Global ] ; existing global section\nInputGunX2 = JOY2_XAXIS\nSoundVolume = 61\n");
     InputDevice[] modelDevices=[new("p2mouse","RS3 P2","mouse",true),new("Root#RDP_MOU","remote","mouse",false),new("p1mouse","RS3 P1","mouse",true),new("p2keys","RS3 P2","keyboard",true),new("p1keys","RS3 P1","keyboard",true)];

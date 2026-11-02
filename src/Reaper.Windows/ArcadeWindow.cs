@@ -1206,7 +1206,7 @@ public sealed class ArcadeWindow : Window
         try
         {
             Send("busy", new { message = I18n.T("Spiel wird geprüft und vorbereitet …") });
-            fixes = await AutomaticFixes.Run([game], store.DirectoryPath);
+            fixes = await AutomaticFixes.Run([game], store.DirectoryPath,cancellation.Token);
             cancellation.Token.ThrowIfCancellationRequested();
             _ = LaunchRules.Prepare(game);
             Send("busy", new { message = I18n.T("Spiel wird gestartet …") });

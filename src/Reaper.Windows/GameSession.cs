@@ -181,10 +181,10 @@ public sealed class GameSession
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!fixesPrepared) await AutomaticFixes.Run([game], dataDirectory);
+            if (!fixesPrepared) await AutomaticFixes.Run([game], dataDirectory,cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             _ = LaunchRules.Prepare(game);
-            input = await GameInputPreparation.Prepare(game, dataDirectory, bindings);
+            input = await GameInputPreparation.Prepare(game, dataDirectory, bindings,cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             bridge=input.Bridge;
             game = input.Game;
