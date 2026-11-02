@@ -2,7 +2,7 @@
 
 <img src="assets/branding/deadeye-icon.png" width="96" alt="Deadeye Arcade app icon">
 
-**Your lightguns. Your games. One Windows arcade.**
+**The ultimate lightgun studio for Windows.**
 
 Browse your games, choose your guns and play from one fullscreen interface.
 Deadeye prepares supported emulator profiles, checks common setup problems and
