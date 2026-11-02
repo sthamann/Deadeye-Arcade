@@ -189,3 +189,12 @@ actions. Captures must show the subsequent mission; selecting a menu tile is
 not a gameplay result. Capture retries after access denial are limited to three
 seconds on the existing Default desktop, without switching desktops or changing
 security settings. A persistent refusal remains a failed capture.
+
+Silent Hill uses its observed Press START screen for readiness. Free Play during
+its logo, warning and loading screens does not pass. The replay waits for a
+player HUD before its weapon checks and records per-player shots at interior aim
+points and reloads. The diagnostic windowed comparison also shows the cursor;
+both vendor fields and original assignments are restored afterward.
+
+Startup-only capture failures can be retried inside the existing bounded scene
+wait on the Default desktop. A retry never establishes readiness or gameplay.

@@ -90,7 +90,12 @@ internal static partial class Program
                     ||!DolphinCreateSaveText("Save game data not found. Create data?","SBDE08")
                     ||DolphinCreateSaveText("Save game data not found. Create data?","RZJE69")
                     ||DolphinReadyText("Save game data not found. Create data?"))throw new IOException("Dolphin first-run prompt scope regression failed.");
-                Console.WriteLine("Scene signal checks passed (18 cases); MAME replay scope checks passed (five cases); Dolphin save prompt checks passed (five cases).");return 0;
+                if(SceneSignals("KONAMI AMUSEMENT FREE PLAY",requireStart:true).Ready
+                    ||SceneSignals("Please wait WARNING FREE PLAY",requireStart:true).Ready
+                    ||SceneSignals("NOW LOADING Press the START button FREE PLAY",requireStart:true).Ready
+                    ||!SceneSignals("Press the START button FREE PLAY",requireStart:true).Ready)
+                    throw new IOException("Silent Hill boot scene checks failed.");
+                Console.WriteLine("Scene signal checks passed (22 cases); MAME replay scope checks passed (five cases); Dolphin save prompt checks passed (five cases).");return 0;
             }
             if(args.Length < 2 || args[0] is not ("plan" or "run"))
                 throw new ArgumentException("Usage: Deadeye.InputLab plan|run GAME_ID [--data DIR] [--output DIR] [--install-driver] [--input-route-probe] [--windowed-probe] [--hold-ms 50..2000]; capture --output DIR; read-scene IMAGE");
@@ -262,11 +267,17 @@ internal static partial class Program
             {
                 if(windowedProbe)
                 {
-                    if(!Path.GetFileNameWithoutExtension(game.SourcePath).Equals("AliensExtermination",StringComparison.OrdinalIgnoreCase))
-                        throw new NotSupportedException("The windowed comparison is restricted to Aliens Extermination.");
+                    if(Path.GetFileNameWithoutExtension(game.SourcePath) is not ("AliensExtermination" or "SilentHill"))
+                        throw new NotSupportedException("The windowed comparison is restricted to Aliens Extermination and Silent Hill.");
                     var profile=XDocument.Load(game.SourcePath);
                     var value=profile.Descendants("FieldInformation").First(f=>f.Element("CategoryName")?.Value=="General"&&f.Element("FieldName")?.Value=="Windowed").Element("FieldValue")!;
-                    value.Value="1";profile.Save(game.SourcePath);
+                    value.Value="1";
+                    if(Path.GetFileNameWithoutExtension(game.SourcePath)=="SilentHill")
+                    {
+                        var cursor=profile.Descendants("FieldInformation").FirstOrDefault(f=>f.Element("FieldName")?.Value=="HideCursor")?.Element("FieldValue");
+                        if(cursor is not null)cursor.Value="0";
+                    }
+                    profile.Save(game.SourcePath);
                     evidence.Add(new {stage="diagnostic-override",field="General/Windowed",value="1",note="Temporary comparison; restored after the session."});
                 }
                 preparedHash=Hash(game.SourcePath);
@@ -283,7 +294,7 @@ internal static partial class Program
             File.WriteAllText(Path.Combine(output,"launched-controls.json"),JsonSerializer.Serialize(controls,json));
             var actions=controls.Rows.Where(r=>r.Player is 1 or 2&&!r.IsAim&&!Administrative(r)).ToArray();
             evidence.Add(new {stage="control-audit",audit=GameControlAudit.Read(game,data,players),actions=actions.Select(r=>new {r.Player,r.Function,r.Expression})});
-            if(!routeProbe)await WaitForPlayableScene(session);
+            if(!routeProbe)await WaitForPlayableScene(session,game);
             else
             {
                 await Delay(2000);RequireGame(session);
@@ -301,6 +312,24 @@ internal static partial class Program
                 for(int i=0;i<presses;i++)await Action(session,controllers,players,row);
             }
             await Delay(5000);
+            if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath)=="SilentHill")
+            {
+                evidence.Add(new {stage="silent-hill-after-start",frame=Capture(session,"silent-hill-after-start")});
+                var mission=Stopwatch.StartNew();bool hud=false;
+                while(mission.Elapsed<TimeSpan.FromSeconds(120))
+                {
+                    string frame=Capture(session,"silent-hill-mission-wait");string text=await SceneText(Path.Combine(output,frame));
+                    hud=Regex.IsMatch(text,"ERIC|TINA",RegexOptions.IgnoreCase)
+                        &&!Regex.IsMatch(text,@"PLEASE\s*WAIT|HOLD.*FIRE|PRESS.*START",RegexOptions.IgnoreCase);
+                    evidence.Add(new {stage="silent-hill-mission-wait",text,frame,hud});
+                    if(hud)break;
+                    await Delay(3000);
+                }
+                if(!hud)throw new IOException("Silent Hill did not show a reviewed player HUD; weapon replay refused.");
+                foreach(var row in actions.Where(r=>Regex.IsMatch(r.Function,"start",RegexOptions.IgnoreCase)))await Action(session,controllers,players,row);
+                await Delay(2000);
+                evidence.Add(new {stage="silent-hill-before-aim",frame=Capture(session,"silent-hill-before-aim"),gameResponse="requires-visual-review"});
+            }
             if(!routeProbe&&Path.GetFileNameWithoutExtension(game.SourcePath)=="AliensArmageddon")
             {
                 string menu=Capture(session,"armageddon-mode-menu");string text=await SceneText(Path.Combine(output,menu));
@@ -380,7 +409,11 @@ internal static partial class Program
             for(int p=1;p<=2;p++)
             {
                 var pipePoints=new List<PipeSample>();
-                foreach(var point in new[]{(0,0),(16384,0),(32767,0),(32767,16384),(32767,32767),(16384,32767),(0,32767),(0,16384),(16384,16384)})
+                bool silent=Path.GetFileNameWithoutExtension(game.SourcePath)=="SilentHill";
+                if(silent)foreach(var start in actions.Where(r=>r.Player==p&&Regex.IsMatch(r.Function,"start",RegexOptions.IgnoreCase)))await Action(session,controllers,players,start);
+                var points=silent?new[]{(3277,3277),(29490,3277),(29490,29490),(3277,29490),(16384,16384)}
+                    :new[]{(0,0),(16384,0),(32767,0),(32767,16384),(32767,32767),(16384,32767),(0,32767),(0,16384),(16384,16384)};
+                foreach(var point in points)
                 {
                     RequireGame(session);Drain();controllers[p-1].SubmitMouse(new HMMouseState {X=point.Item1,Y=point.Item2});await Delay(250);
                     var observed=Drain();int x=(int)Math.Round(point.Item1*65535d/32767),y=(int)Math.Round(point.Item2*65535d/32767);
@@ -388,6 +421,7 @@ internal static partial class Program
                     var pipeSample=pipe?.Sample();if(pipeSample is not null)pipePoints.Add(pipeSample);
                     evidence.Add(new {stage="aim",emulatorInput=pipeSample,player=p,expectedX=x,expectedY=y,rawInputVerified=received,gameState=gameObservation?.Sample(),frame=Capture(session,$"p{p}-aim-{point.Item1}-{point.Item2}"),gameResponse="requires-visual-review"});
                     if(!received)throw new IOException($"P{p} absolute aim did not reach the RawInput consumer correctly.");
+                    if(silent)await Action(session,controllers,players,actions.First(r=>r.Player==p&&r.SourceKey==$"P{p}Button1"),point.Item1,point.Item2);
                 }
                 if(pipe is not null)
                 {
@@ -397,6 +431,7 @@ internal static partial class Program
                     if(!span)throw new IOException($"P{p} emulator aiming range is truncated.");
                 }
                 await Sweep(session,controllers[p-1],players[p-1]);
+                if(silent)await Action(session,controllers,players,actions.First(r=>r.Player==p&&Regex.IsMatch(r.Function,"reload",RegexOptions.IgnoreCase)));
             }
             foreach(var row in actions.Where(r=>!Regex.IsMatch(r.Function,"coin|credits?|start",RegexOptions.IgnoreCase)))await Action(session,controllers,players,row);
         }
@@ -427,7 +462,7 @@ internal static partial class Program
         return HidD_GetAttributes(device,ref a)&&a.Vendor==0xF0DE&&a.Product==0xA000+player;
     }
     private static bool Administrative(ControlRow row)=>Regex.IsMatch(row.SourceKey??"","^(Test|Service)",RegexOptions.IgnoreCase)||Regex.IsMatch(row.Function,@"volume|service|test\s*menu|test\s*mode|exit|quit",RegexOptions.IgnoreCase);
-    private static async Task WaitForPlayableScene(GameSession session)
+    private static async Task WaitForPlayableScene(GameSession session,GameEntry game)
     {
         var started=Stopwatch.StartNew();
         while(started.Elapsed<TimeSpan.FromSeconds(150))
@@ -440,8 +475,16 @@ internal static partial class Program
             try {frame=Capture(session,"startup-scene");}
             catch(IOException) when(!session.GameWindowAvailable||!session.HasGameForeground())
             {await Delay(500);continue;}
+            catch(Exception error) when(error.HResult==unchecked((int)0x80070005)
+                ||error is IOException&&error.Message=="DXGI supplied no updated desktop image after four frames.")
+            {
+                var desktop=InputDesktopDiagnostics.Read();
+                if(desktop.inputDesktopError!=0||desktop.inputDesktop!="Default"||desktop.threadDesktop!="Default")throw;
+                evidence.Add(new {stage="startup-capture-wait",seconds=started.Elapsed.TotalSeconds,desktop,error=error.Message});
+                await Delay(1000);continue;
+            }
             string text=await SceneText(Path.Combine(output,frame));
-            var (ready,loading)=SceneSignals(text,gameObservation?.Sample().GameStatus);
+            var (ready,loading)=SceneSignals(text,gameObservation?.Sample().GameStatus,Path.GetFileNameWithoutExtension(game.SourcePath)=="SilentHill");
             evidence.Add(new {stage="scene-readiness",seconds=started.Elapsed.TotalSeconds,frame,text,loading,ready});
             Console.WriteLine($"Scene at {started.Elapsed.TotalSeconds:F0}s: "+text.Replace('\r',' ').Replace('\n',' '));
             if(ready)return;
@@ -449,12 +492,13 @@ internal static partial class Program
         }
         throw new IOException("The renderer never reached a recognized game/menu scene. No button or aiming replay was accepted as gameplay verification.");
     }
-    private static (bool Ready,bool Loading) SceneSignals(string text,byte? gameStatus=null)
+    private static (bool Ready,bool Loading) SceneSignals(string text,byte? gameStatus=null,bool requireStart=false)
     {
         bool loading=Regex.IsMatch(text,"LOADING|NO.*GVR[I1O0]|NO.*ALIENS.*GUNS",RegexOptions.IgnoreCase);
         // The arcade font's A is read as R in actual Windows OCR captures.
         bool menu=Regex.IsMatch(text,"[PD]RESS.*ST[ARO4]RT|INSERT.*(?:COIN|CREDITS?)|FREE\\s*PL[AR4]Y|SELECT.*MISSION|MISSION.*SELECT|SELECT.*LEVEL",RegexOptions.IgnoreCase);
-        return (!loading&&(menu||gameStatus is 4 or 64),loading);
+        bool start=Regex.IsMatch(text,"[PD]RESS.*ST[ARO4]RT",RegexOptions.IgnoreCase);
+        return (!loading&&(requireStart?start:menu||gameStatus is 4 or 64),loading);
     }
     private static async Task<string> SceneText(string file)
     {

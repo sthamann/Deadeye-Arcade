@@ -367,7 +367,7 @@ public sealed class GameSession
                             // the GLUT renderer. Minimize only this session's own
                             // non-modal launcher after the renderer is ready.
                             // Other applications and real error dialogs stay visible.
-                            if(game.Source=="teknoparrot" && TeknoDisplaySetup.Supports(game))
+                            if(game.Source=="teknoparrot" && (Path.GetFileNameWithoutExtension(game.SourcePath) is "AliensExtermination" or "AliensArmageddon"))
                                 try {
                                     process.Refresh();
                                     var launcherWindow=process.MainWindowHandle;

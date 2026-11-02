@@ -60,7 +60,7 @@ field or alter the relative setting without an assigned supported gun.
 The Dolphin input lab uses a separate emulator user directory, copies only
 configuration INIs, redirects write paths and never copies original saves or
 discs. Original configuration hashes and the library were unchanged after the
-replays. Its title recognizer is experimental and rejects scenes it cannot
+replays. Its scene recognizer is experimental and rejects scenes it cannot
 identify rather than marking boot input as working gameplay.
 
 Vendor guidance checked during diagnosis: [Dolphin accuracy profiles](https://github.com/ProfgLX/Dolphin-Lightguns-Accuracy-Inis),
@@ -84,9 +84,15 @@ entry above shows a JVS error despite its responsive window.
 | Alien3: The Gun, MAME | Credits increased independently. Two players entered the mission, shots were visible and each Bomb reduced its own remaining count. The English in-game guide visibly names Shoot and Bomb for both selected guns. | Full aiming accuracy, hits, sustained play and physical tracking. |
 | Aliens: Extermination | The native and virtual two-gun replays completed; reviewed frames show an active two-player level and shots. Profiles and the library were restored unchanged. | Complete weapon effects, hit confirmation, sustained play and physical tracking. |
 | Aliens Armageddon | A later native candidate passed renderer, foreground, menu/resume and cleanup checks. A pointed Story Mode selection reached an active two-player mission. Both triggers produced visible shots; P2 also increased its kill counter. | Grenades, reload effects, sustained play and physical tracking. The earlier timeout is retained as an intermittent failure. |
-| Resident Evil: The Umbrella Chronicles | Native menu/resume and cleanup pass. In isolated NAND, pointed A confirms the first-run save prompt and reaches Load Game. | The replay must enter an actual mission before weapon actions can be accepted. |
-| Resident Evil: The Darkside Chronicles | Native menu/resume and cleanup pass. In isolated NAND, pointed A confirms the first-run save prompt and reaches Profile Selection. | Mission entry and actual independent player actions. |
-| Silent Hill: The Arcade | Native launch/menu/cleanup pass. Virtual replay resolves both players' bindings but GPU capture fails with access denied while both input and thread desktops are Default. | Capture failure diagnosis and actual game responses. It is not classified as a game crash. |
+| Resident Evil: The Umbrella Chronicles | Native menu/resume and cleanup pass. In isolated NAND, pointed A confirms the first-run save prompt and a new test profile reaches Scenario Selection. | The replay must enter an actual mission before weapon actions can be accepted. |
+| Resident Evil: The Darkside Chronicles | Native menu/resume and cleanup pass. In isolated NAND, pointed A confirms the first-run save prompt, creates a test profile and reaches Difficulty Select. | Mission entry and actual independent player actions. |
+| Silent Hill: The Arcade | Exclusive fullscreen passes a short launch check but ignores the observed virtual Start input and can lose the renderer after the menu. A controlled windowed comparison passes two minutes with menu/resume. In a separate mission, both players shoot and reload with visible ammunition changes. | Confirmed hits, full aiming accuracy, contextual Option L/R effects, sustained play and physical tracking. |
+
+The Silent Hill repair changes only the matching vendor Windowed field and
+uses the existing monitor presentation path. Its native comparison preserved
+the original profile exactly. The virtual replay also restored its temporary
+cursor setting and both original gun assignments. A trial to reveal a hidden
+fullscreen window directly did not solve the failure and was rejected.
 
 The MAME pilot reads the emulator's effective output directories, preserves
 calibration in isolated configuration/NVRAM copies, and checks original hashes
@@ -177,3 +183,8 @@ After both published-package checks, the library hash was unchanged, no virtual
 test device collections remained and the frontend returned to foreground. Both
 current and saved physical desktop modes were 3840 x 2160 at 60 Hz. Physical gun
 tracking, recoil and complete playthroughs remain separate verification tasks.
+
+The [0.3.69 package](https://github.com/sthamann/deadeye-arcade/releases/tag/v0.3.69)
+passed [779 Windows core checks and 28 Input Lab checks](https://github.com/sthamann/deadeye-arcade/actions/runs/41412490642).
+Its installer checksum was checked before installation, and the installed
+assembly reports `0.3.69+478d62f8d213b092278085a30a5e4078f61da91c`.

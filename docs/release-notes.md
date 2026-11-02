@@ -1,9 +1,8 @@
-Make game checks more useful for two-player lightgun setups.
+Prepare Silent Hill Arcade for reliable Start input and menu resume.
 
-- Show Shoot and Bomb for both players in Alien3: The Gun and Terminator 2 rather than generic button numbers. Keep the actual installed MAME bindings intact.
-- Start the renderer startup budget after profile preparation and report preparation time separately. Slow first-run setup has its own bounded timeout and cleanup.
-- Add experimental two-gun MAME replays for the reviewed Alien3 and Terminator 2 launch recipes. Use isolated configuration and NVRAM copies, preserve existing calibration and verify that original files and the library remain unchanged.
-- Extend the optional Dolphin replay to the two Resident Evil Chronicles titles, with isolated first-run save prompts. Unknown game scenes still stop verification.
-- Record input desktop details when native GPU capture fails. Keep input delivery, observed game effects and physical gun acceptance separate.
+- Select the existing vendor windowed setting for the matching Silent Hill profile and present the renderer across the monitor. Retain its resolution, both players’ controls and an exact original profile backup. Repeated setup is harmless.
+- Keep Aliens’ reviewed fullscreen absolute-input route and launcher handling separate. Unrelated profiles and differently identified games retain their settings.
+- Wait through temporary startup capture transitions on the current Default desktop. Refuse protected or unavailable desktop content.
+- Require Silent Hill’s actual Start prompt instead of accepting Free Play during boot. Its optional input replay waits for a player HUD, rejoins players and records shots and reloads at the aiming points. Temporary cursor changes are restored.
 
-Input Lab is optional developer tooling. Its virtual HID driver is never installed by the ordinary frontend. A successful automated run does not certify a complete game or physical tracking.
+A native menu/resume comparison lasting two minutes and separate ammunition observations for both players support this repair. Hits, full aiming accuracy, contextual Option L/R effects and physical tracking remain separate checks.

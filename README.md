@@ -115,6 +115,11 @@ physical monitor. Range effects do not certify a game's recoil integration.
 
 ## Profiles, dependencies and automatic repairs
 
+For the matching Silent Hill Arcade profile, Deadeye prepares windowed rendering
+and fills the monitor so Start input and the in-game menu can work together.
+It keeps the game’s resolution and player bindings, with a backup of the original
+profile. Physical aiming and contextual actions still need an in-game check.
+
 For Alien3: The Gun and Terminator 2 in MAME, the startup guide names each
 player’s Shoot and Bomb controls directly. It reads the installed emulator’s
 current bindings, including per-game overrides.
