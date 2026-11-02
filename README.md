@@ -14,7 +14,8 @@ brings you back to your library when a game ends.
 
 **[Download for Windows](https://github.com/sthamann/deadeye-arcade/releases/latest)** ·
 [Portable app and checksums](https://github.com/sthamann/deadeye-arcade/releases) ·
-[Setup guide](#get-started)
+[Setup guide](#get-started) ·
+[Troubleshooting](docs/troubleshooting.md)
 
 ![English game library with covers and a running video preview](docs/images/deadeye-library.jpg)
 
@@ -35,6 +36,11 @@ brings you back to your library when a game ends.
   profile and presentation problems.
 - **Keep a way back.** A startup controls guide, in-game menu, independent emergency
   exit and persistent **Close app · Windows** button keep navigation within reach.
+
+Your preferred titles appear first in the library, newest first within that selection.
+The remaining games follow by release year. Each dated cover shows its year directly.
+
+![English library with preferred games first and release years on the covers](docs/images/deadeye-cover-years.jpg)
 
 ![English library navigation and game preview playback](docs/images/deadeye-library.gif)
 
@@ -101,9 +107,6 @@ alone do not confirm that the camera sees the emitters.
 [Physical button reference](docs/HARDWARE-CONTROLS.md) ·
 [Gun Studio walkthrough](docs/gun-studio.md)
 
-Your preferred titles appear first in the library, newest first within that selection.
-The remaining games follow by release year. Each dated cover shows its year directly.
-
 ## Try your guns before a game
 
 Open **My Guns → Firing range** to test shooting, reloads and additional actions
@@ -161,6 +164,7 @@ requirements remain visible for review. Firmware flashes, factory resets,
 Windows security policy changes and physical calibration are not automatic.
 
 [Automatic repair guide](docs/automatic-repairs.md) ·
+[Common problems and solutions](docs/troubleshooting.md) ·
 [Detailed profile routing](docs/lightgun-setup.md#how-gun-profiles-reach-your-games)
 
 ### Emulator support

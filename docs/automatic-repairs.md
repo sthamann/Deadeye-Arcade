@@ -1,5 +1,7 @@
 # Automatic repairs
 
+For a specific symptom, start with [Troubleshooting](troubleshooting.md).
+
 Deadeye carries reviewed setup knowledge with the application. It checks the
 selected game before dependency validation and launch. A full library check runs
 after import and when **Check and repair library** is selected. Startup loads the
@@ -79,6 +81,7 @@ and size before use. Downloads have bounded time and size limits.
 
 Under `%LOCALAPPDATA%\ReaperArcade`:
 
+- `fix-report.json`: latest combined repair and control findings shown in the app.
 - `fixes-report.json`: latest library inspection.
 - `fixes-<game-id>.json`: latest selected-game inspection.
 - `fixes-history.jsonl`: actual repaired files and launch-time profile changes;
