@@ -101,6 +101,9 @@ alone do not confirm that the camera sees the emitters.
 [Physical button reference](docs/HARDWARE-CONTROLS.md) ·
 [Gun Studio walkthrough](docs/gun-studio.md)
 
+Your preferred titles appear first in the library, newest first within that selection.
+The remaining games follow by release year. Each dated cover shows its year directly.
+
 ## Try your guns before a game
 
 Open **My Guns → Firing range** to test shooting, reloads and additional actions

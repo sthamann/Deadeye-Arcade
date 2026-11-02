@@ -51,6 +51,7 @@ import { GunNavigation, navigateGun, activateGunControl } from "./GunNavigation"
 import { ShootingRange } from "./ShootingRange";
 import { GunScroll } from "./GunScroll";
 import { MediaPreview } from "./MediaPreview";
+import { releaseYear, sortLibrary } from "./LibraryOrder";
 import { FilePicker, ArcadeKeyboard, type PickerState } from "./ArcadeDialogs";
 type Page = "play" | "guns" | "import" | "settings";
 type Modal =
@@ -453,7 +454,7 @@ function App() {
     document.addEventListener("keydown", key);
     return () => document.removeEventListener("keydown", key);
   }, [state.native, state.remoteSession, state.bindingStage, modal, page, picker, keyboard, platformPicker]);
-  const allGames = demo ? examples : state.games;
+  const allGames = sortLibrary(demo ? examples : state.games, state.settings.preferredGameIds ?? [], state.settings.language);
   const games = allGames.filter(
     (g) =>
       (filter !== "favorites" || g.favorite) &&
@@ -856,6 +857,11 @@ function App() {
                                 {game.platform.toUpperCase()}
                               </span>
                             </>
+                          )}
+                          {releaseYear(game) !== null && (
+                            <span className="poster-year" aria-label={`${t("Erscheinungsjahr")}: ${releaseYear(game)}`}>
+                              {releaseYear(game)}
+                            </span>
                           )}
                           <span
                             className={

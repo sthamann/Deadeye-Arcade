@@ -644,6 +644,21 @@ main {
   font-size: 9px;
   z-index: 2;
 }
+.poster-year {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #10151df5;
+  color: #f3f5fa;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  pointer-events: none;
+}
 .poster-status.verified {
   color: #a2d7b2;
 }

@@ -17,7 +17,7 @@ public record GunBinding(int Player, string MouseId, string? KeyboardId = null, 
     [System.Text.Json.Serialization.JsonIgnore] public int DevicePlayer => HardwarePlayer ?? GunSystems.HardwarePlayer(SystemId, MouseId, Player);
 }
 public record InputDevice(string Id, string Name, string Kind, bool RetroShooter, string? PhysicalId = null);
-public record AppSettings(bool StartWithWindows = false, bool Fullscreen = true, string? CoverKey = null, string? CalibrationTool = null, string Language = "en", bool CheckForUpdates = true, bool DesktopCrosshairs = true, bool ManualGunAssignments = false);
+public record AppSettings(bool StartWithWindows = false, bool Fullscreen = true, string? CoverKey = null, string? CalibrationTool = null, string Language = "en", bool CheckForUpdates = true, bool DesktopCrosshairs = true, bool ManualGunAssignments = false, string[]? PreferredGameIds = null);
 public record LibraryState(List<GameEntry> Games, List<GunBinding> Bindings, AppSettings Settings)
 {
     public static LibraryState Empty => new([], [], new());

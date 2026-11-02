@@ -115,6 +115,7 @@ export type State = {
     language: "en" | "de";
     checkForUpdates?: boolean;
     desktopCrosshairs?: boolean;
+    preferredGameIds?: string[] | null;
   };
   bindingStage: null | {
     player: number;
