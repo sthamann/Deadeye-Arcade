@@ -27,3 +27,11 @@ presented; it now retries for at most twenty seconds from each owned renderer's
 first appearance, never repeatedly stealing focus after success and never
 approving a blocking security prompt. Native confirmation of that change remains
 required.
+
+Windows CI [run 42029901310](https://github.com/sthamann/Deadeye-Arcade/actions/runs/42029901310)
+completed successfully: 855 core checks, 22 Input Lab scene cases, five MAME
+scope cases and five Dolphin save-prompt cases. The installer, portable app,
+Input Lab archive and checksums are published in the 0.3.76 release.
+
+Installation on the test PC returned exit code zero and matched the expected
+0.3.76 commit. The saved game library hash was unchanged.
