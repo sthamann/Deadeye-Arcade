@@ -2,6 +2,11 @@ namespace Reaper.Core;
 
 public static class GameRuntimeWindows
 {
+    // Modern Windows security and device prompts are not always #32770 dialogs.
+    // These hosts cannot be a game renderer. Preserve the prompt and stop the
+    // unattended batch instead of recording every following game as broken.
+    public static bool BlockingPrompt(string windowClass,string processName)=>windowClass=="#32770"
+        || new[]{"SecHealthUI","SecurityHealthHost","PickerHost","GameInputSvc","GameInputRedistService"}.Contains(processName,StringComparer.OrdinalIgnoreCase);
     // Dolphin Core::UpdateTitle and both Qt render modes use this runtime
     // status title. Its library/configuration windows do not carry it.
     // https://github.com/dolphin-emu/dolphin/blob/master/Source/Core/Core/Core.cpp

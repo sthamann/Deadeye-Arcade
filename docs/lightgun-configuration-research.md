@@ -70,3 +70,17 @@ and the previously reviewed Saturn consumer. GunCon uses trigger, reload, A and 
 Zapper trigger belongs to console port two. Unused profile fields do not prove
 missing game actions. Conversely, these core contracts do not verify every ROM's
 controls, remaps or pointer range in the installed emulator build.
+
+The [Flycast Atomiswave input table](https://github.com/flyinghead/flycast/blob/master/core/hw/naomi/naomi_roms_input.h)
+assigns PUMP separately from trigger for Ranger Mission and Extreme Hunting 2.
+The [libretro consumer](https://github.com/flyinghead/flycast/blob/master/shell/libretro/libretro.cpp)
+reads that pump through `LIGHTGUN_AUX_A`; `LIGHTGUN_RELOAD` instead forces an
+offscreen shot. Deadeye routes the physical reload action to Pump for these two
+exact Atomiswave titles and leaves the forced offscreen-shot input unbound.
+
+[Snes9x's Super Scope consumer](https://github.com/libretro/snes9x/blob/master/libretro/libretro.cpp)
+reads trigger, cursor, turbo and pause. The configured
+[Opera standard 3DO gun](https://github.com/libretro/opera-libretro/blob/master/lr_input.c)
+reads trigger, reload and option. These consumers are distinct from the cores'
+Justifier and arcade 3DO device modes. Their labels now follow the configured
+consumer instead of demanding buttons from an unrelated device mode.

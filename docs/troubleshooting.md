@@ -344,6 +344,18 @@ is excluded from this local filter. Game details link to the manufacturer or
 store used for the exact edition. A game's official player mode does not
 certify two independent gun inputs on the current installation.
 
-The initial catalog has 43 documented editions. Other entries display
+The catalog has 51 documented editions. Other entries display
 **Player count unverified**. Imported free-text setup notes are retained in the
 library but cannot override this source-backed metadata.
+
+## Many unrelated launch checks fail with foreground focus errors
+
+Inspect the first failed session before repeating the full batch. A Windows
+security prompt or device window can remain in front of every later game.
+Deadeye recognizes classic dialogs and modern security/GameInput hosts and
+pauses the batch for attention. Resolve the visible prompt through Windows;
+do not disable firewall, GameInput or other protections just to clear a result.
+
+Run the app and game checks as the normal signed-in user. Elevating a console
+transition must not also elevate its game-test process. Cxbx explicitly warns
+when a game is launched with administrator rights.

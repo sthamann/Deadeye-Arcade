@@ -1025,5 +1025,8 @@
   "Der Originalautomat bietet vier Spieler auf zwei Bildschirmen. Der verknüpfte Betrieb ist mit zwei lokal eingerichteten Guns noch nicht geprüft.": "The original cabinet supports four players across two screens. Linked play is not verified by configuring two local guns.",
   "Wegeauswahl": "Path selection",
   "Installierter HOTD-III-ArcadeMod: Tastaturmodus, Start-Tastencodes und DemulShooter-Gerätezuordnung ausgelesen. Zielen und Treffer müssen im Spiel geprüft werden.": "Installed HOTD III ArcadeMod keyboard mode, Start scan codes and DemulShooter device assignments. Aim and hit response still require an in-game test.",
-  "Beide Spieler verwenden dieselbe globale Start-Taste. Den Guns unterschiedliche Tastaturcodes zuweisen.": "Both players share the same global Start key. Assign distinct keyboard codes on the guns."
+  "Beide Spieler verwenden dieselbe globale Start-Taste. Den Guns unterschiedliche Tastaturcodes zuweisen.": "Both players share the same global Start key. Assign distinct keyboard codes on the guns.",
+  "Nachladen / Pumpen": "Reload / Pump",
+  "Cursor-Taste": "Cursor button",
+  "Dauerfeuer / Turbo": "Rapid fire / Turbo"
 }

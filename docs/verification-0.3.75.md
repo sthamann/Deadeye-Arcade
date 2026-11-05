@@ -26,3 +26,11 @@ preferred entries first, then priority and release year.
 The large Claude review did not complete within its six-minute deadline. A
 smaller follow-up review was attempted separately; no completed independent
 review is claimed until its response is available.
+
+GitHub Windows [run 42021810138](https://github.com/sthamann/Deadeye-Arcade/actions/runs/42021810138)
+completed successfully: 843 core checks and 32 Input Lab checks (22 scene signal,
+five MAME replay scope and five Dolphin save prompt cases). Installer and portable
+packages are published in the corresponding release.
+
+The follow-up Claude review also reached its 100-second deadline without a
+completed response, despite an authenticated CLI. No Claude approval is claimed.

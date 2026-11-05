@@ -125,6 +125,7 @@ public static class OverlayControls
                     var match = Regex.Match(pair.Key, @"^input_player([1-4])_(gun_trigger|gun_reload|gun_aux_a|gun_aux_b|gun_aux_c|gun_start|gun_select|gun_offscreen_shot|gun_dpad_up|gun_dpad_down|gun_dpad_left|gun_dpad_right|a|b|start|select)(?:_(mbtn|btn|axis))?$");
                     if (!match.Success) continue;
                     string label = match.Groups[2].Value switch { "gun_trigger" => I18n.T("Abzug"), "gun_reload" or "gun_offscreen_shot" => I18n.T("Nachladen"), "gun_aux_a" or "a" => "A", "gun_aux_b" or "b" => "B", "gun_aux_c" => "C", "gun_start" or "start" => "Start", "gun_select" or "select" => I18n.T("Select / Münze (Core abhängig)"), _ => match.Groups[2].Value.Replace("gun_dpad_", "D-Pad ") };
+                    label=RetroArchSetup.ActionLabel(game,match.Groups[2].Value)??label;
                     string input = match.Groups[3].Value switch { "mbtn" => I18n.T("Maustaste "), "btn" => I18n.T("Controller-Taste "), "axis" => I18n.T("Achse "), _ => I18n.T("Taste ") };
                     // Controller/axis numbers have no confirmed physical gun identity.
                     int port = int.Parse(match.Groups[1].Value);

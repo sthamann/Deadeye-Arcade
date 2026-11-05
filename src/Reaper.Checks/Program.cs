@@ -136,6 +136,8 @@ if (OperatingSystem.IsWindows())
 string runtimeRoot=Path.Combine(Path.GetTempPath(),"deadeye-runtime-fixture");
 Check(GameRuntimeWindows.DolphinRenderer("Dolphin 5.0-21168 | JIT64 DC | Vulkan | HLE") && GameRuntimeWindows.DolphinRenderer("Dolphin 2512 | Cached Interpreter SC | Direct3D 12 | LLE | Test title") && !GameRuntimeWindows.DolphinRenderer("Dolphin 5.0-21168") && !GameRuntimeWindows.DolphinRenderer("Graphics Configuration"),"Dolphin's documented runtime status identifies the renderer in both separate-window and render-to-main modes");
 Check(GameRuntimeWindows.UnrealShipping(@"C:\Game\Binaries\Win64\ESGame-Win64-Shipping.exe")&&GameRuntimeWindows.UnrealShipping("/game/Binaries/Win32/Test-Win32-Shipping.exe")&&!GameRuntimeWindows.UnrealShipping(@"C:\Game\Binaries\Win32\ESGame-Win64-Shipping.exe")&&!GameRuntimeWindows.UnrealShipping("/launchers/ESGame-Win64-Shipping.exe"),"Unreal renderer selection is limited to matching packaged Shipping runtimes and architecture directories");
+Check(GameRuntimeWindows.BlockingPrompt("Windows.UI.Core.CoreWindow","PickerHost") && GameRuntimeWindows.BlockingPrompt("unknown","gameinputsvc") && GameRuntimeWindows.BlockingPrompt("#32770","cxbx"),"Modern Windows security and GameInput prompts stop unattended tests before unrelated games inherit focus failures");
+Check(!GameRuntimeWindows.BlockingPrompt("UnityWndClass","GameInputDemo") && !GameRuntimeWindows.BlockingPrompt("FREEGLUT","BudgieLoader"),"Prompt detection preserves actual game renderers and does not match arbitrary GameInput name prefixes");
 Check(GameRuntimeWindows.ChildRuntime("Railbreak.exe",runtimeRoot,Path.Combine(runtimeRoot,"Project","Binaries","Win64","Project-Win64-Shipping.exe")) && !GameRuntimeWindows.ChildRuntime("Railbreak.exe",runtimeRoot,Path.Combine(runtimeRoot,"Launcher","update.exe")),"Packaged game children are recognized without accepting arbitrary updater windows");
 Check(!GameRuntimeWindows.ChildRuntime("Railbreak.exe",runtimeRoot,Path.Combine(runtimeRoot+"-other","Project","Binaries","Win64","Project-Win64-Shipping.exe")) && GameRuntimeWindows.KnownLauncher("steam.exe"),"Known launcher windows and game binaries outside the configured game directory cannot certify a game launch");
 Check(GameRuntimeWindows.ChildRuntime("DeadRelay.exe",runtimeRoot,Path.Combine(runtimeRoot,"DeadRelay","Binaries","Win64","DeadRelay.exe"))&&GameRuntimeWindows.ChildRuntime("DeadRelay.exe",runtimeRoot,Path.Combine(runtimeRoot,"DeadRelay","Binaries","Win32","DeadRelay.exe")),"Packaged Unreal development builds recognize only the configured bootstrap's exact executable name in an architecture directory");
@@ -645,6 +647,29 @@ RButton::y
     string sharedProfile=File.ReadAllText(RetroArchSetup.ProfilePath(raGame,root));
     GameInputProfiles.Configure(raGame,root,[],[],[]);
     Check(File.ReadAllText(RetroArchSetup.ProfilePath(raGame,root))==sharedProfile,"A keyboard-only preparation preserves existing gun profiles");
+    foreach(string pumpModel in GunSystems.Catalog.Select(g=>g.Id))
+    {
+        var gun=MatrixGun(pumpModel,1);
+        var pumpGame=raGame with{Id="pump-"+pumpModel,Platform="Arcade — Sammy Atomiswave",SourcePath="rangrmsn.zip",Arguments=["-L","flycast_libretro.dll","rangrmsn.zip"]};
+        RetroArchSetup.Configure(pumpGame,root,[gun],[gun.MouseId]);
+        var pumpRows=OverlayControls.Read(pumpGame,root,[gun]).Rows;
+        Check(pumpRows.Single(r=>r.SourceKey=="gun_aux_a").Expression=="P1|"+StartupControls.ActionToken(gun,"reload")
+            && pumpRows.All(r=>r.SourceKey is "gun_trigger" or "gun_aux_a" or "gun_start" or "gun_select"),
+            "Atomiswave Pump follows the physical reload action without inventing unused controls on "+pumpModel);
+        var pumpReplay=await ControlSimulation.Run([pumpGame],root,[gun]);
+        Check(pumpReplay.Games.Single().Actions.All(a=>a.Status=="profile-routed")
+            && File.ReadAllText(RetroArchSetup.ProfilePath(pumpGame,root)).Contains("input_player1_gun_reload = \"nul\""),
+            "Atomiswave Pump replay releases correctly and does not also send a forced offscreen shot for "+pumpModel);
+    }
+    foreach(var (core,platform,expected) in new[]{("snes9x_libretro.dll","Nintendo SNES",4),("opera_libretro.dll","Panasonic 3DO",3)})
+    {
+        var coreGame=raGame with{Id="consumer-"+core,Platform=platform,Arguments=["-L",core,"disc.bin"]};
+        var gun=MatrixGun("blamcon",1);RetroArchSetup.Configure(coreGame,root,[gun],[gun.MouseId]);
+        var rows=OverlayControls.Read(coreGame,root,[gun]).Rows;
+        var coreReplay=await ControlSimulation.Run([coreGame],root,[gun]);
+        Check(rows.Count(r=>r.SourceKey?.StartsWith("gun_")==true)==expected && coreReplay.Games.Single().Actions.All(a=>a.Status=="profile-routed"),
+            "The "+core+" consumer exposes only its actual gun controls and reaches each with Vyper input");
+    }
     var collidingRa=raGame with {Id="shared-keyboards"};
     var sameKeys=GunSystems.DefaultMap(1,"xgunner");
     var sharedGuns=new[]{new GunBinding(1,"xg-mouse","xg-keyboard",SystemId:"xgunner",ButtonMap:sameKeys),new GunBinding(2,"other-mouse","other-keyboard",SystemId:"xgunner",ButtonMap:sameKeys)};

@@ -767,5 +767,73 @@
       "checkedAt": "2026-11-05",
       "note": "Player two assists by shooting; player one controls movement."
     }
+  },
+  {
+    "titles": [
+      "Ghost Squad"
+    ],
+    "platform": "Nintendo Wii",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-mixed",
+      "maxPlayers": 4,
+      "sources": [
+        "https://www.nintendo.com/de-de/Spiele/Wii/Ghost-Squad-281320.html"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "Up to four simultaneous players in the Wii edition."
+    }
+  },
+  {
+    "titles": [
+      "Duck Hunt"
+    ],
+    "platform": "Nintendo NES",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "asymmetric",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.nintendo.com/en-gb/Games/NES/Duck-Hunt-946955.html"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "Player two can control the duck. This is not two simultaneous lightguns."
+    }
+  },
+  {
+    "titles": [
+      "Intake"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "237760",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/237760/"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": null
+    }
+  },
+  {
+    "titles": [
+      "Heavy Weapon Deluxe"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "3410",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/3410/"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": null
+    }
   }
 ]

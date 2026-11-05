@@ -97,7 +97,7 @@ public sealed class GameSession
         try
         {
             using var process=Process.GetProcessById((int)id);
-            if(name.ToString()!="#32770" && process.ProcessName is not ("SecHealthUI" or "SecurityHealthHost"))return null;
+            if(!GameRuntimeWindows.BlockingPrompt(name.ToString(),process.ProcessName))return null;
             var title=new StringBuilder(512);GetWindowTextW(window,title,title.Capacity);
             return new((int)id,process.ProcessName,name.ToString(),title.ToString(),Text:NativeGameWindows.DialogText(window));
         }
@@ -285,6 +285,7 @@ public sealed class GameSession
         var targets = new HashSet<int>(); if (targetSeen) targets.Add(process.Id);
         var lastChild = DateTime.Now;
         var presented = new HashSet<nint>();
+        var presentationStarted = new Dictionary<nint,DateTime>();
         // Retain handles while the owned runtime is alive so its real exit code
         // remains readable after the process disappears from the process list.
         var runtimeMonitors = new Dictionary<int, (Process Process, string Name)>();
@@ -333,7 +334,7 @@ public sealed class GameSession
                     }
                     // Minimized frontend may otherwise leave a terminal ahead of a slowly created game window.
                     // Focus the actual renderer once, only during startup and while no overlay is open.
-                    if (!overlayVisible && DateTime.Now - started < TimeSpan.FromSeconds(20))
+                    if (!overlayVisible && CurrentBlockingDialog() is null)
                         foreach (var pair in owned.ToArray())
                             try
                             {
@@ -341,7 +342,16 @@ public sealed class GameSession
                                 if (gameProcess.HasExited || gameProcess.StartTime != pair.Value) continue;
                                 if(!IsGameRuntime(gameProcess,game,target,process.Id))continue;
                                 var handle = RuntimeWindow(gameProcess);
-                                if (handle != 0 && IsWindowVisible(handle) && presented.Add(handle)) { if(IsIconic(handle)) ShowWindowAsync(handle, 9); SetForegroundWindow(handle); }
+                                if (handle != 0 && IsWindowVisible(handle) && !presented.Contains(handle))
+                                {
+                                    if(!presentationStarted.TryGetValue(handle,out var firstSeen))presentationStarted[handle]=firstSeen=DateTime.Now;
+                                    if(DateTime.Now-firstSeen>=TimeSpan.FromSeconds(20))continue;
+                                    if(IsIconic(handle)) ShowWindowAsync(handle, 9);
+                                    // Windows may decline activation while the renderer is
+                                    // still being created. Do not count a declined request
+                                    // as success and permanently skip that renderer.
+                                    if(GetForegroundWindow()==handle || SetForegroundWindow(handle))presented.Add(handle);
+                                }
                             }
                             catch (Exception e) when (e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
                     // Wait for the actual game window, not the launcher or dependency dialog.
@@ -374,7 +384,7 @@ public sealed class GameSession
                                         && process.MainWindowTitle.Equals("Game Running",StringComparison.OrdinalIgnoreCase))
                                         ShowWindowAsync(launcherWindow,6);
                                 } catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
-                            SetForegroundWindow(readyWindow);
+                            if(CurrentBlockingDialog() is null)SetForegroundWindow(readyWindow);
                             if(!legendShown) {legendShown=true;GameWindowReady?.Invoke(readyWindow);}
                         }
                     }

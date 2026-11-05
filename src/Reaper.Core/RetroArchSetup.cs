@@ -6,6 +6,8 @@ public static class RetroArchSetup
 {
     public static bool IsRetroArch(GameEntry game) => Path.GetFileName(game.Executable).Contains("retroarch", StringComparison.OrdinalIgnoreCase);
     public static string ProfilePath(GameEntry game, string data) => Path.Combine(data, "input-profiles", Regex.Replace(game.Id, "[^a-zA-Z0-9_-]", "_") + ".cfg");
+    public static bool AtomiswavePump(GameEntry game) => game.Platform.Contains("Atomiswave",StringComparison.OrdinalIgnoreCase)
+        && Path.GetFileNameWithoutExtension(game.SourcePath.Replace('\\','/')).ToLowerInvariant() is "rangrmsn" or "xtrmhnt2";
 
     // Only inputs consumed by the selected core's lightgun implementation.
     // This is an emulator contract, not confirmation of every game's actions
@@ -20,8 +22,19 @@ public static class RetroArchSetup
             "mednafen_psx_libretro.dll" or "mednafen_psx_hw_libretro.dll" => ["gun_trigger","gun_reload","gun_aux_a","gun_aux_b"],
             "fceumm_libretro.dll" => ["gun_trigger"],
             "genesis_plus_gx_libretro.dll" => ["gun_trigger","gun_aux_a","gun_aux_b","gun_start"],
+            "flycast_libretro.dll" when AtomiswavePump(game) => ["gun_trigger","gun_aux_a","gun_start","gun_select"],
+            "snes9x_libretro.dll" => ["gun_trigger","gun_aux_a","gun_aux_b","gun_start"],
+            "opera_libretro.dll" => ["gun_trigger","gun_reload","gun_select"],
             _ => []
         };
+    }
+    public static string? ActionLabel(GameEntry game,string action)
+    {
+        if(AtomiswavePump(game) && action=="gun_aux_a")return I18n.T("Nachladen / Pumpen");
+        if(game.Arguments.Any(a=>Path.GetFileName(a.Replace('\\','/')).Equals("snes9x_libretro.dll",StringComparison.OrdinalIgnoreCase)))
+            return action switch {"gun_aux_a"=>I18n.T("Cursor-Taste"),"gun_aux_b"=>I18n.T("Dauerfeuer / Turbo"),"gun_start"=>I18n.T("Pause"),_=>null};
+        if(game.Arguments.Any(a=>Path.GetFileName(a.Replace('\\','/')).Equals("opera_libretro.dll",StringComparison.OrdinalIgnoreCase)) && action=="gun_select")return "Option";
+        return null;
     }
 
     // WinRaw in the installed 1.14/1.19 builds uses the original OS enumeration,
@@ -82,11 +95,13 @@ public static class RetroArchSetup
                     if (text is not null) values[prefix + function] = text;
                 }
             }
-            Bind("gun_trigger", Token("shoot")); Bind("gun_reload", Token("reload"));
+            bool pump=core=="flycast_libretro.dll" && AtomiswavePump(game);
+            Bind("gun_trigger", Token("shoot"));
+            if(!pump)Bind("gun_reload", Token("reload"));
             Bind("gun_start", Token("start")); Bind("start", Token("start"));
             Bind("gun_select", Token("coin")); Bind("select", Token("coin"));
             var hardware = StartupControls.GameHardware(binding);
-            Bind("gun_aux_a", hardware.FirstOrDefault(c => c.Id == "magazine")?.Token);
+            Bind("gun_aux_a", pump?Token("reload"):hardware.FirstOrDefault(c => c.Id == "magazine")?.Token);
             Bind("gun_aux_b", hardware.FirstOrDefault(c => c.Id == "side")?.Token);
             Bind("a", Token("shoot")); Bind("b", Token("reload"));
             foreach (string direction in new[] { "up", "down", "left", "right" }) { var token = hardware.FirstOrDefault(c => c.Id == direction)?.Token; Bind("gun_dpad_" + direction, token); Bind(direction, token); }

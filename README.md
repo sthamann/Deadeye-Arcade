@@ -166,6 +166,7 @@ startup reference shows the resulting profile and any unresolved controls.
 | Reviewed classic HOTD III fullscreen hang | Backs up the mod configuration, replaces the affected executable's exclusive fullscreen mode with windowed rendering and fills the monitor through borderless presentation. |
 | Beetle Saturn lightgun warnings | Reads Trigger, Reload and Start from the active gun ports, ignores unused generic buttons and still flags missing required actions or real shared-key conflicts. |
 | GunCon and Zapper warnings | Reads the selected core's actual inputs instead of requiring unused C, Start or D-pad buttons. NES menu control and its port-two Zapper remain assigned to physical P1. |
+| Pump, Super Scope and 3DO controls | Routes Ranger Mission and Extreme Hunting 2 Pump separately from offscreen reload; shows the configured core's Cursor, Turbo, Pause and Option controls. |
 | Duplicate starts and lingering processes | Reserves a single session and supervises the owned game and helper processes. |
 
 Open **Settings → Automatic repairs** for findings, completed changes and next
@@ -232,6 +233,10 @@ With the frontend closed, use `ReaperArcade.exe --test-library` for launch check
 or `ReaperArcade.exe --simulate-controls` for control checks. Resume, stop commands,
 report formats and detailed coverage are documented in the
 [library validation guide](docs/library-validation.md).
+
+Run games and their checks as the normal signed-in user. If a Windows security,
+device or other blocking prompt takes foreground focus, unattended checks stop
+for attention. Deadeye does not approve those prompts or disable their protections.
 
 For a focused menu and resume check, use
 `ReaperArcade.exe --test-game <game-id> 120 --with-overlay`. It opens the native
