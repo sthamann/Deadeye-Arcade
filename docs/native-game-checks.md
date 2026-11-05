@@ -225,3 +225,13 @@ renderer observation, foreground handling, menu/resume and owned-process cleanup
 The frontend returned, the library hash was unchanged, and both current and saved
 physical modes remained 3840 x 2160 at 60 Hz. This check verifies the installed
 repair and session path; it adds no new aiming or hit-confirmation claim.
+
+## Latest isolated MAME replay
+
+The installed Input Lab replay delivered all planned action press/release pairs and five absolute aim points for each of two virtual guns in Alien3 and Terminator 2. Original configuration and library hashes remained unchanged. Both reports exited successfully.
+
+Reviewed Terminator 2 Bomb frames again show independent effects: P1 changes from 25 to 24 while P2 stays at 25; P2 then changes from 25 to 24 while P1 stays at 24. The animation is visible in both comparisons. Alien3's latest late-action frames do not establish another complete two-player HUD comparison, so their successful input delivery is kept separate from gameplay-effect acceptance. Physical tracking and sustained play remain open.
+
+## Shadows Rising renderer handoff
+
+The installed follow-up passed two minutes with the native game menu and resume enabled. The session followed Transformers2.exe and its TF2_Gun renderer, retained actual foreground focus and completed cleanup. Previously it had followed the separate GameShell bootstrap. Independent gun gameplay is still a separate acceptance step.
