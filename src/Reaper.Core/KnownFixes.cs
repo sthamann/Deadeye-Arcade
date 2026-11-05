@@ -288,6 +288,7 @@ public static class KnownFixes
         .Select(h => Path.Combine(h.WorkingDirectory, "config.ini"))
         .Concat(File.Exists(Path.Combine(game.WorkingDirectory, "BlueEstate_Fix.dll")) ? [Path.Combine(game.WorkingDirectory, "LightGun_Patch.ini")] : [])
         .Concat(MultiplayerSetup.SupportsHouseDead2Remake(game) ? [MultiplayerSetup.HouseDead2RemakeConfigPath()] : [])
+        .Concat(MultiplayerSetup.SupportsHouseDeadRemake(game) ? [Path.Combine(game.WorkingDirectory, "ArcadeMod_Config.ini")] : [])
         .Concat(File.Exists(Path.Combine(game.WorkingDirectory, "EMULATOR.INI")) ? [Path.Combine(game.WorkingDirectory, "EMULATOR.INI")] : []).ToArray();
     public static string? Target(GameEntry game)
     {

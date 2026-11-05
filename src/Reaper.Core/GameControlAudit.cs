@@ -32,7 +32,7 @@ public static class GameControlAudit
     }
     public static GameControlReview Read(GameEntry game, string data, IEnumerable<GunBinding> bindings, IEnumerable<InputDevice>? devices = null)
     {
-        var guns = bindings.Where(b=>b.Player is 1 or 2).OrderBy(b=>b.Player).ToArray();
+        var guns = bindings.Where(b=>b.Player is 1 or 2).Select(b=>GameGunProfiles.ForGame(game,b)).OrderBy(b=>b.Player).ToArray();
         if(TimeCrisis5Controls.Supports(game))guns=guns.Where(b=>b.Player==1).ToArray();
         var mame=game.Source=="mame"?MameControls.Metadata(game,data):null;
         if(mame is not null && MameControls.Players(mame)>0)guns=guns.Where(b=>b.Player<=MameControls.Players(mame)).ToArray();
@@ -43,7 +43,7 @@ public static class GameControlAudit
         bool dolphin = DolphinSetup.IsDolphin(game);
         string? id = dolphin ? DolphinSetup.DiscId(game) : null;
         string[] required = id is null ? [] : RequiredDolphin(id);
-        bool requiredActionsChecked = dolphin ? required.Length > 0 : tekno is not null && tekno.Rows.All(r=>r.Player is >=1 and <=4) || mame is not null || TimeCrisis5Controls.Supports(game);
+        bool requiredActionsChecked = dolphin ? required.Length > 0 : tekno is not null && tekno.Rows.All(r=>r.Player is >=1 and <=4) || mame is not null || TimeCrisis5Controls.Supports(game) || MultiplayerSetup.SupportsHouseDeadRemake(game);
         bool relativeAim=game.Source=="teknoparrot"&&File.Exists(game.SourcePath)
             &&System.Xml.Linq.XDocument.Load(game.SourcePath).Descendants("FieldInformation").Any(f=>f.Element("FieldName")?.Value=="Use Relative Input"&&f.Element("FieldValue")?.Value=="1");
         var players = new List<PlayerControlAudit>();
@@ -136,6 +136,12 @@ public static class GameControlAudit
         }
         string state=players.Count==0?"needs-action":players.Any(p=>p.Status=="needs-action")?"needs-action":players.Any(p=>p.Status=="needs-review")?"needs-review":"mapping-checked";
         return new(game.Id,game.Title,dolphin?"Dolphin":game.Source,state,players.ToArray(),controls.Note,requiredActionsChecked);
+    }
+    public static void RequireLaunchMapping(GameControlReview review)
+    {
+        if (!review.RequiredActionsChecked || review.Status != "needs-action") return;
+        var issues = review.Players.Where(p=>p.Status=="needs-action").SelectMany(p=>p.Issues.Select(issue=>$"P{p.Player}: {issue}"));
+        throw new InvalidDataException(I18n.T("Die Spielbelegung ist unvollständig: ") + string.Join("; ",issues.Distinct().Take(8)));
     }
     public static string[] ExtraInputConflicts(IEnumerable<ControlRow> rows)
     {

@@ -22,7 +22,16 @@ internal sealed class GameInputPreparation : IAsyncDisposable
         {
             var before = KnownFixes.Snapshot(KnownFixes.InputFiles(game, data));
             using var raw = new RawInput(); raw.Refresh();
-            setup.Players = GunConnections.ForConfiguration(bindings, raw.Devices, GunDiscovery.Scan(raw.Devices));
+            var requested = bindings.Where(b => b.Player is 1 or 2).ToArray();
+            var physical = GunDiscovery.Scan(raw.Devices);
+            setup.Players = GunConnections.ForConfiguration(requested, raw.Devices, physical);
+            foreach (var binding in requested)
+                setup.Log($"{game.Id} P{binding.Player} {binding.SystemId}: " +
+                    (setup.Players.Any(p => p.Player == binding.Player)
+                        ? "included by fresh device discovery."
+                        : "excluded: assigned mouse is absent or unhealthy in the current device discovery."));
+            if (requested.Any(b=>b.Player==1) && !setup.Players.Any(b=>b.Player==1))
+                throw new IOException(I18n.T("Die für P1 gewählte Gun ist aktuell nicht erreichbar. Bitte unter Meine Guns erneut zuordnen. Das Spielprofil wurde nicht überschrieben."));
             if(game.Source=="mame")
             {
                 if(MameControls.Metadata(game,data) is null)await MameMetadata.Prepare(game,data,cancellationToken);

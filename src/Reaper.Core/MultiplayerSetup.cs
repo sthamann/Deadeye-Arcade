@@ -43,6 +43,46 @@ public static class MultiplayerSetup
             DolphinSetup.WriteMerged(patch, "LightGuns", new Dictionary<string, string> { ["Gun1"] = ids.GetValueOrDefault(1, ""), ["Gun2"] = ids.GetValueOrDefault(2, "") });
         }
         ConfigureHouseDead2Remake(game, players);
+        ConfigureHouseDeadRemake(game);
+    }
+    public static bool SupportsHouseDeadRemake(GameEntry game) =>
+        Path.GetFileName(game.Executable).Equals("The House of the Dead Remake.exe", StringComparison.OrdinalIgnoreCase) &&
+        (game.Helpers ?? []).Any(h => IsDemulShooter(h.Executable) && h.Arguments.Contains("-rom=hotdra")) &&
+        new[] { "HotdRemake_ArcadePlugin_202204.dll", "HotdRemake_ArcadePlugin_202207.dll" }
+            .Any(name => File.Exists(Path.Combine(game.WorkingDirectory, "BepInEx", "plugins", name))) &&
+        File.Exists(Path.Combine(game.WorkingDirectory, "ArcadeMod_Config.ini"));
+    public static bool ConfigureHouseDeadRemake(GameEntry game)
+    {
+        if (!SupportsHouseDeadRemake(game)) return false;
+        // The installed ArcadePlugin reads only its shared-memory inputs in
+        // multiplayer mode. Keyboard/mouse in the game's own menu is expected.
+        WriteFlat(Path.Combine(game.WorkingDirectory, "ArcadeMod_Config.ini"),
+            new Dictionary<string, string> { ["InputType"] = "1" }, compactSeparator: true);
+        return true;
+    }
+    public static GameControls ReadHouseDeadRemake(GameEntry game, IEnumerable<GunBinding> bindings)
+    {
+        string file = Path.Combine(game.WorkingDirectory, "ArcadeMod_Config.ini");
+        bool multiplayer = File.Exists(file) && File.ReadLines(file).Any(line => Regex.IsMatch(line, @"^\s*InputType\s*=\s*1\s*$"));
+        var helper = (game.Helpers ?? []).FirstOrDefault(h => IsDemulShooter(h.Executable) && h.Arguments.Contains("-rom=hotdra"));
+        string config = helper is null ? "" : Path.Combine(helper.WorkingDirectory, "config.ini");
+        var values = File.Exists(config) ? File.ReadLines(config).Where(l => l.Contains('=')).Select(l => l.Split('=', 2))
+            .GroupBy(p => p[0].Trim(), StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.Last()[1].Trim(), StringComparer.OrdinalIgnoreCase) : new Dictionary<string,string>();
+        bool freeplay = File.Exists(file) && File.ReadLines(file).Any(line => Regex.IsMatch(line, @"^\s*Freeplay\s*=\s*1\s*$", RegexOptions.IgnoreCase));
+        var rows = new List<ControlRow>();
+        foreach (var gun in bindings.Where(b => b.Player is 1 or 2))
+        {
+            int p = gun.Player;
+            bool assigned = multiplayer && values.GetValueOrDefault($"P{p}Mode") == "RAWINPUT" &&
+                values.GetValueOrDefault($"P{p}DeviceName") == gun.MouseId;
+            void Add(string function, string token, bool aim = false) => rows.Add(new(p, I18n.T(function),
+                assigned ? aim ? "Aim" : OverlayControls.InputName(token) : I18n.T("Nicht belegt"),
+                "HOTD Remake ArcadePlugin + DemulShooter", assigned ? $"P{p}|{token}" : null, aim));
+            Add("Abzug", "mouse:1"); Add("Nachladen", "mouse:2"); Add("Start", "key:" + (48+p));
+            if (!freeplay && p == 1) Add("Münze", "key:53");
+            Add("Zielen", "aim", true);
+        }
+        return new(rows.ToArray(), I18n.T("Die Belegung wird aus ArcadePlugin-Modus und DemulShooter-Geräten gelesen. Die Controlleranzeige im Spiel bleibt Tastatur/Maus. Treffer müssen im Spiel geprüft werden."));
     }
     public static bool ConfigureHouseDead2Remake(GameEntry game, IReadOnlyList<GunBinding> players)
     {

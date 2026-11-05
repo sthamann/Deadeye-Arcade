@@ -1224,7 +1224,10 @@ public sealed class ArcadeWindow : Window
             foreach (var gesture in gestures.Values) gesture.Reset();
             foreach (var hold in triggerHolds.Values) hold.Reset(); activeGame = game;
             state.Games[state.Games.IndexOf(game)] = game with { LastPlayed = DateTimeOffset.UtcNow }; store.Save(state); Log("launch: " + game.Title);
-            await session.Run(game, store.DirectoryPath, state.Bindings.Where(b => guns.Any(g => g.MouseId is not null && string.Equals(g.MouseId, b.MouseId, StringComparison.OrdinalIgnoreCase))), cancellation.Token, fixesPrepared: true);
+            // GameInputPreparation resolves the current USB interfaces. The UI's
+            // discovery cache can lag a reconnect and must not discard a slot
+            // before that live check, leaving P1 empty in the game's profile.
+            await session.Run(game, store.DirectoryPath, state.Bindings.ToArray(), cancellation.Token, fixesPrepared: true);
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested) { Log("launch: cancelled before returning to desktop"); }
         finally

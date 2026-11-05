@@ -245,6 +245,9 @@ public sealed class GameSession
         using var nativeDisplay=NativeDisplayScope.Begin(game,dataDirectory);
         GamePresentation.Prepare(game);
         KnownFixes.RecordChanges(game, dataDirectory, "game-profile", beforeProfile, profileFiles);
+        var launchPlayers = bindings.ToArray();
+        if (launchPlayers.Length > 0)
+            GameControlAudit.RequireLaunchMapping(GameControlAudit.Read(game, dataDirectory, launchPlayers));
         ProfilePrepared?.Invoke();
         var info = LaunchRules.Prepare(game);
         if(SupermodelSetup.IsSupermodel(game) && bindings.Any()) info.ArgumentList.Add("-input-system=rawinput");

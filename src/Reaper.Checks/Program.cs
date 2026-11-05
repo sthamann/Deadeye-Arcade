@@ -395,6 +395,10 @@ try
     Check(GunConnections.ForConfiguration([remoteGun],[keyboardOnly],[usbGun with {MouseId="other-mouse"}]).Length==0 && GunConnections.ForConfiguration([remoteGun],[keyboardOnly],[usbGun with {SystemId="sinden"}]).Length==0,"A keyboard, another mouse or another gun model cannot stand in for the assigned USB mouse");
     var rawMouse=new InputDevice("physical-mouse","RS3","mouse",true);
     Check(GunConnections.ForConfiguration([remoteGun],[rawMouse],[]).Length==1 && GunConnections.CanIndexMice([remoteGun],[rawMouse]),"The ordinary local RawInput path still permits actual mouse-index configuration");
+    var reconnectBinding=remoteGun with {PhysicalId=usbGun.Id,KeyboardId="old-keyboard",SerialPort="COM1",ControlMap=new(){["start"]="key:49"}};
+    var reconnectGun=usbGun with {InputIds=["new-mouse","new-keyboard"],MouseId="new-mouse",KeyboardId="new-keyboard",Port="COM7"};
+    var launchReconnected=GunConnections.ForConfiguration([reconnectBinding],[],[reconnectGun]);
+    Check(launchReconnected.Length==1 && launchReconnected[0].MouseId=="new-mouse" && launchReconnected[0].KeyboardId=="new-keyboard" && launchReconnected[0].SerialPort=="COM7" && launchReconnected[0].ControlMap==reconnectBinding.ControlMap && launchReconnected[0].Player==1,"Fresh physical identity restores changed USB interfaces at launch without discarding P1 or its learned controls");
     Check(KnownFixes.Catalog.Select(r=>r.Id).Distinct().Count()==KnownFixes.Catalog.Length && KnownFixes.Catalog.All(r=>r.Mode is "automatic" or "launch-time" or "needs-action"), "Repair catalog has unique reviewed rules and explicit automation boundaries");
     string repairRoot=Path.Combine(multiRoot,"repairs");Directory.CreateDirectory(repairRoot);
     string autoRepairProfile=Path.Combine(repairRoot,"game.xml"),repairBinary=Path.Combine(repairRoot,"game.exe");File.WriteAllText(repairBinary,"not a PE image");
@@ -721,6 +725,21 @@ RButton::y
     MultiplayerSetup.Configure(multiplayerModelGame,[p1,p2]);
     Check(DolphinSetup.Value(File.ReadAllText(Path.Combine(multiRoot,"EMULATOR.INI")),"Input","UseRawInput")=="0"&&DolphinSetup.Value(File.ReadAllText(Path.Combine(multiRoot,"EMULATOR.INI")),"Renderer","DrawCross")=="0"&&File.ReadAllText(Path.Combine(multiRoot,"EMULATOR.INI")).Contains("Bilinear=1"),"Model2 helper prevents conflicting native input without changing renderer preferences");
     Throws(()=>MultiplayerSetup.Configure(multiGame,[p1,p2 with {MouseId=p1.MouseId}]),"One mouse cannot masquerade as two independent players");
+    string remakeRoot=Path.Combine(multiRoot,"hotd-remake");Directory.CreateDirectory(Path.Combine(remakeRoot,"BepInEx","plugins"));
+    File.WriteAllText(Path.Combine(remakeRoot,"BepInEx","plugins","HotdRemake_ArcadePlugin_202204.dll"),"fixture");
+    string remakeConfig=Path.Combine(remakeRoot,"ArcadeMod_Config.ini");File.WriteAllText(remakeConfig,"InputType=0\nFreeplay=1\nResolutionWidth=1920\n");
+    var remakeGame=multiGame with {Id="hotd-remake-fixture",Title="The House of the Dead: Remake",Executable=Path.Combine(remakeRoot,"The House of the Dead Remake.exe"),WorkingDirectory=remakeRoot,Helpers=[new(helperExe,["-target=windows","-rom=hotdra"],multiRoot)]};
+    Check(MultiplayerSetup.ReadHouseDeadRemake(remakeGame,[p1,p2]).Rows.All(r=>r.Expression is null),"A single-mouse ArcadePlugin cannot be reported as a two-gun route");
+    MultiplayerSetup.Configure(remakeGame,[p1,p2]);
+    Check(File.ReadAllText(remakeConfig).Contains("InputType=1") && File.ReadAllText(remakeConfig).Contains("ResolutionWidth=1920") && File.ReadAllText(remakeConfig+".before-deadeye-multiplayer").Contains("InputType=0"),"HOTD Remake prepares the installed multiplayer input mode recoverably without changing graphics");
+    var remakeControls=OverlayControls.Read(remakeGame,root,[p1,p2]);
+    Check(remakeControls.Rows.Count(r=>r.IsAim)==2 && remakeControls.Rows.Any(r=>r.Player==1&&r.Expression=="P1|key:49") && remakeControls.Rows.Any(r=>r.Player==2&&r.Expression=="P2|key:50"),"HOTD Remake legends read two actual helper devices and the plugin's distinct fixed Start keys");
+    Check(remakeControls.Rows.All(r=>r.Function!=I18n.T("Münze")) && GameGunProfiles.FixedMouseReload(remakeGame),"Freeplay does not invent a required P2 coin key and Vyper magazine uses the plugin's fixed mouse reload channel");
+    var remakeHash=KnownFixes.Hash(remakeConfig);MultiplayerSetup.Configure(remakeGame,[p1,p2]);
+    Check(KnownFixes.Hash(remakeConfig)==remakeHash && KnownFixes.MultiplayerFiles(remakeGame).Contains(remakeConfig),"Repeated HOTD Remake preparation is idempotent and its input mode participates in repair snapshots");
+    Check(!MultiplayerSetup.SupportsHouseDeadRemake(remakeGame with {Executable=Path.Combine(remakeRoot,"THE HOUSE OF THE DEAD 2 Remake.exe")}) && !MultiplayerSetup.SupportsHouseDeadRemake(remakeGame with {Helpers=null}),"HOTD 1 configuration never applies to the second remake or a different helper route");
+    Throws(()=>GameControlAudit.RequireLaunchMapping(new("fixture","Fixture","teknoparrot","needs-action",[new(1,"needs-action",["Start is unassigned"],[])],"",true)),"A recognized profile with a missing required Start is rejected before the game process starts");
+    GameControlAudit.RequireLaunchMapping(new("fixture","Fixture","custom","needs-review",[],"",false));
     File.WriteAllText(Path.Combine(multiRoot,"BlueEstate_Fix.dll"),"");
     var blueGame=multiGame with {Title="Blue Estate",Helpers=null};
     MultiplayerSetup.Configure(blueGame,[p1,p2]);
@@ -816,6 +835,29 @@ RButton::y
     Check(configuredTp.Descendants("DeviceType").Count(e=>e.Value=="Mouse")==2 && configuredTp.Descendants("KeyboardKey").Any(e=>e.Value=="D1"),"TeknoParrot maps aim/trigger to the gun mouse and Start to its keyboard");
     Check(configuredTp.Descendants("FieldValue").Single().Value=="RawInput" && configuredTp.Descendants("BindName").Any(e=>e.Value=="Keep pedal") && TeknoGunSetup.Configure(repair,[new(1,mouse,"keyboard-1")])==0,"Automatic input setup is idempotent and preserves title-specific pedal controls");
     Check(OverlayControls.Read(repair,root,[new(1,mouse,"keyboard-1")]).Rows.Any(r=>r.Function=="Player 1 Light Gun" && r.Input=="P1 · "+I18n.T("Zielen / Mausbewegung")),"TeknoParrot aim binding is shown as movement instead of an unassigned button");
+    string walkingProfile=Path.Combine(tp,"UserProfiles","WalkingDead-fixture.xml");
+    var walkingFixture=new XDocument(new XElement("GameProfile",new XElement("EmulationProfile","RawThrillsGUN"),
+        new XElement("ConfigValues",new XElement("FieldInformation",new XElement("FieldName","Input API"),new XElement("FieldValue","RawInput"),new XElement("FieldOptions",new XElement("string","RawInput")))),
+        new XElement("JoystickButtons",Enumerable.Range(1,2).SelectMany(p=>new[]{("Start Button P"+p,"P"+p+"ButtonStart"),("Trigger P"+p,"P"+p+"Button1"),("Reload P"+p,"P"+p+"Button2"),("P"+p+" Light Gun","P"+p+"LightGun")}.Select(r=>new XElement("JoystickButtons",new XElement("ButtonName",r.Item1),new XElement("InputMapping",r.Item2)))))));
+    GunBinding WalkingGun(string model,int player)
+    {
+        var b=new GunBinding(player,"walking-mouse-"+player,"walking-keyboard-"+player,SystemId:model,HardwarePlayer:player);
+        if(model=="blamcon") {b=BlamconSetup.Learn(b,"start","key:"+(48+player));b=BlamconSetup.Learn(b,"select","key:"+(52+player));b=BlamconSetup.Learn(b,"magazine",player==1?"key:82":"key:84");}
+        if(model=="sinden") {b=GunSystems.LearnControl(b,"front-left","key:"+(48+player));b=GunSystems.LearnControl(b,"back-left","key:"+(52+player));b=GunSystems.LearnControl(b,"pump","mouse:2");}
+        return b;
+    }
+    foreach(string firstModel in new[]{"rs3","sinden","xgunner","blamcon"}) foreach(string secondModel in new[]{"rs3","sinden","xgunner","blamcon"})
+    {
+        walkingFixture.Save(walkingProfile);
+        var walkingGuns=new[]{WalkingGun(firstModel,1),WalkingGun(secondModel,2)};
+        var walkingGame=repair with {Id="walking-fixture",Title="Walking Dead",SourcePath=walkingProfile};
+        TeknoGunSetup.Configure(walkingGame,walkingGuns);
+        var walkingXml=XDocument.Load(walkingProfile);
+        Check(walkingGuns.All(b=>walkingXml.Descendants("JoystickButtons").SingleOrDefault(r=>r.Element("InputMapping")?.Value=="P"+b.Player+"ButtonStart")?.Element("RawInputButton")?.Element("DevicePath")?.Value==b.KeyboardId
+            && OverlayControls.Read(walkingGame,root,walkingGuns).Rows.Where(r=>r.Player==b.Player&&!r.IsAim).All(r=>StartupControls.Resolve(r,b).Resolved))
+            && walkingXml.Descendants("JoystickButtons").Count(r=>r.Element("InputMapping")?.Value.EndsWith("LightGun")==true&&!string.IsNullOrWhiteSpace(r.Element("RawInputButton")?.Element("DevicePath")?.Value))==2,
+            "Walking Dead writes reachable Start, trigger, reload and independent aim routes for "+firstModel+" P1 and "+secondModel+" P2");
+    }
     string relativeAimPath=Path.Combine(tp,"UserProfiles","relative-aim.xml");
     var relativeAimFixture=XDocument.Load(repairProfile);
     relativeAimFixture.Root!.Element("ConfigValues")!.Add(new XElement("FieldInformation",new XElement("CategoryName","General"),new XElement("FieldName","Use Relative Input"),new XElement("FieldValue","1")));

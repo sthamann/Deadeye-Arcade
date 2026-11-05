@@ -34,6 +34,10 @@ brings you back to your library when a game ends.
 - **Prepare supported games.** Input adapters use the selected guns, runtime
   inspection finds missing dependencies, and reviewed repairs handle known path,
   profile and presentation problems.
+- **Keep the selected players connected.** Each launch checks the current USB
+  devices, recovers changed interface paths and reads back required game controls.
+  A missing Start or trigger in a supported profile produces a specific setup
+  error before the game starts.
 - **Keep a way back.** A startup controls guide, in-game menu, independent emergency
   exit and persistent **Close app · Windows** button keep navigation within reach.
 

@@ -997,5 +997,8 @@
   "Das Silent-Hill-Profil enthält mehrere Windowed-Felder. Die Anzeigeeinstellung muss geprüft werden; das Profil bleibt erhalten.": "The Silent Hill profile has multiple Windowed fields. Review its display setting; the profile has been preserved.",
   "Silent Hill auf den geprüften Fenstermodus vorbereitet; Auflösung und Gun-Belegung beibehalten.": "Prepared Silent Hill for the reviewed windowed mode; resolution and gun bindings were preserved.",
   "Automatische Eingabevorbereitung fehlgeschlagen: ": "Automatic input preparation failed: ",
-  "Silent Hill Anzeige und Spielmenü": "Silent Hill display and game menu"
+  "Silent Hill Anzeige und Spielmenü": "Silent Hill display and game menu",
+  "Die Spielbelegung ist unvollständig: ": "The game controls are incomplete: ",
+  "Die für P1 gewählte Gun ist aktuell nicht erreichbar. Bitte unter Meine Guns erneut zuordnen. Das Spielprofil wurde nicht überschrieben.": "The gun selected for P1 is currently unavailable. Reassign it under My Guns. The game profile has not been overwritten.",
+  "Die Belegung wird aus ArcadePlugin-Modus und DemulShooter-Geräten gelesen. Die Controlleranzeige im Spiel bleibt Tastatur/Maus. Treffer müssen im Spiel geprüft werden.": "Controls are read from the ArcadePlugin mode and DemulShooter device assignments. The game controller menu still shows keyboard/mouse. Hits must be checked in gameplay."
 }
