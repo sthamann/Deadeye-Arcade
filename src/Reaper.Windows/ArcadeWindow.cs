@@ -304,6 +304,7 @@ public sealed class ArcadeWindow : Window
         {
             games = state.Games.Select(g => g with { Cover = MediaUrl(g.Cover, true), PreviewVideo = MediaUrl(g.PreviewVideo), Screenshot = MediaUrl(g.Screenshot), Logo = MediaUrl(g.Logo) }),
             gameChecks = state.Games.ToDictionary(g=>g.Id,g=>GameLaunchCheck.Read(g,store.DirectoryPath)),
+            playerSupport = state.Games.ToDictionary(g=>g.Id,g=>GamePlayers.Read(g)),
             gameCompatibility = state.Games.ToDictionary(g=>g.Id,g=>GameCompatibility.Read(g,state.Bindings.Count(b=>guns.Any(gun=>gun.MouseId==b.MouseId)))),
             bindings = state.Bindings,
             devices = raw.Devices,
@@ -756,6 +757,13 @@ public sealed class ArcadeWindow : Window
         if (busy || scanningGuns || preparingGunSoftware && type=="setup-gun") throw new InvalidOperationException(I18n.T("Die laufende Aktion wird noch abgeschlossen."));
         switch (type)
         {
+            case "open-player-source":
+                {
+                    string url = payload.GetProperty("url").GetString() ?? "";
+                    if (!GamePlayers.Catalog.Any(r=>r.Support.Sources.Contains(url)) || !Uri.TryCreate(url,UriKind.Absolute,out var uri) || uri.Scheme != "https" || uri.UserInfo != "") throw new ArgumentException("Unknown player metadata source.");
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute=true });
+                    break;
+                }
 
             case "check-updates": await CheckAppUpdate(); break;
             case "update-preference":
@@ -894,6 +902,31 @@ public sealed class ArcadeWindow : Window
                     break;
                 }
             case "refresh": raw.Refresh(); await DiscoverGuns(); break;
+            case "reconnect-vyper":
+                {
+                    var selected = state.Bindings.Single(b => b.Player == Player() && b.SystemId == "blamcon");
+                    if (selected.PhysicalId is null) throw new InvalidOperationException(I18n.T("Bitte zuerst eine Vyper für diesen Spieler auswählen."));
+                    busy = true;
+                    try
+                    {
+                        string instance = GunDiscovery.VyperUsbInstance(selected.PhysicalId);
+                        Log("Vyper USB recovery requested: P" + selected.Player + " container=" + selected.PhysicalId + " instance=" + instance);
+                        var start = new System.Diagnostics.ProcessStartInfo(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "pnputil.exe")) { UseShellExecute = true, Verb = "runas", WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden };
+                        start.ArgumentList.Add("/restart-device"); start.ArgumentList.Add(instance);
+                        using var process = System.Diagnostics.Process.Start(start) ?? throw new IOException("USB restart did not start.");
+                        await process.WaitForExitAsync();
+                        if (process.ExitCode != 0) throw new IOException(I18n.T("Windows konnte die Vyper nicht neu verbinden. Kabel und Anschluss prüfen.") + " (" + process.ExitCode + ")");
+                        Log("Vyper USB restart completed: exit=" + process.ExitCode);
+                        await Task.Delay(1500);
+                        RecoverInputs("vyper-usb-restart");
+                        await DiscoverGuns();
+                        Send("notice", new { message = I18n.T("Vyper neu verbunden. Bitte Abzug und Bewegung am Bildschirm prüfen.") });
+                    }
+                    catch (System.ComponentModel.Win32Exception error) when (error.NativeErrorCode == 1223)
+                    { Send("notice", new { message = I18n.T("USB-Wiederverbindung abgebrochen. Deine Einstellungen bleiben erhalten.") }); }
+                    finally { busy = false; SendState(); }
+                    break;
+                }
             case "learn-menu":
                 {
                     var binding=state.Bindings.First(b=>b.Player==Player());

@@ -43,6 +43,29 @@ public static class GunDiscovery
         finally { SetupDiDestroyDeviceInfoList(set); }
     }
     private record Node(string Instance, string Container, string Name, string? Port, bool Healthy);
+    // Resolve the present composite USB device, never its parent hub or HID children.
+    // Container identity comes from SetupAPI again immediately before the restart.
+    public static string VyperUsbInstance(string physicalId)
+    {
+        if (!Guid.TryParse(physicalId, out var target)) throw new ArgumentException("Invalid physical device identity.");
+        nint set = SetupDiGetClassDevsW(0, "USB", 0, 6);
+        if (set == -1) throw new IOException("Windows USB discovery failed.");
+        List<string> matches = [];
+        try
+        {
+            for (uint i = 0; ; i++)
+            {
+                var info = new DeviceInfo { Size = (uint)Marshal.SizeOf<DeviceInfo>() };
+                if (!SetupDiEnumDeviceInfo(set, i, ref info)) break;
+                byte[] container = Property(set, ref info, Container);
+                if (container.Length != 16 || new Guid(container) != target) continue;
+                var instance = new StringBuilder(1024);
+                if (SetupDiGetDeviceInstanceIdW(set, ref info, instance, 1024, out _) && VyperUsbRecovery.IsDevice(instance.ToString())) matches.Add(instance.ToString());
+            }
+        }
+        finally { SetupDiDestroyDeviceInfoList(set); }
+        return matches.Count == 1 ? matches[0] : throw new IOException(I18n.T("Die Vyper ist nicht eindeutig als USB-Gerät erreichbar. Kabel und Anschluss prüfen."));
+    }
     public static PhysicalGun[] Scan(IReadOnlyList<InputDevice> inputs)
     {
         nint set = SetupDiGetClassDevsW(0, null, 0, 6); if (set == -1) throw new IOException(I18n.T("Windows-Geräteabfrage konnte nicht gestartet werden."));

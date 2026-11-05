@@ -20,6 +20,16 @@ if(args is ["--simulate-controls",var simulationData])
 }
 
 int checks = 0;
+Check(VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0100\VYPER_TEST_ONE") && VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0101\VYPER_TEST_TWO"), "USB recovery accepts supported Vyper composite node shapes");
+Check(!VyperUsbRecovery.IsDevice(@"USB\ROOT_HUB30\4&2221706A&0&0") && !VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0100&MI_00\7&ABC") && !VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0100\*") && !VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0109\ABC"), "USB recovery rejects hubs, interfaces, wildcard IDs and unknown products");
+var playerFixture = new GameEntry("players", "The House of the Dead: Remake", "PC / Windows", "game.exe", [], ".", "pc", "");
+Check(GamePlayers.Read(playerFixture)?.Mode == "local-coop" && GamePlayers.Read(playerFixture)?.MaxPlayers == 2, "Official local co-op metadata resolves for the Windows remake");
+Check(GamePlayers.Read(playerFixture with { Platform="Sega Saturn" }) is null, "Remake player metadata cannot leak to another platform");
+Check(GamePlayers.Read(playerFixture with { Title="Dead Containment" })?.Mode == "online", "Dead Containment online co-op is not labelled local two-gun co-op");
+Check(GamePlayers.Read(playerFixture with { Title="BangBang PewPew" })?.Mode == "alternating", "Turn-based multiplayer is not labelled simultaneous co-op");
+Check(GamePlayers.Read(playerFixture with { Title="Unknown edition", Players="2 players confirmed" }) is null, "Unverified imported player notes never become official metadata");
+Check(GamePlayers.Read(playerFixture with { Title="Renamed game", MetadataSources=["https://store.steampowered.com/app/3376690/"] })?.Mode == "local-coop", "Stable Steam identity survives renamed titles");
+Check(GamePlayers.Read(playerFixture with { Source="teknoparrot", Platform="Arcade", SourcePath=@"C:\Games\UserProfiles\WalkingDead.xml", Title="Renamed arcade game" })?.MaxPlayers == 2, "Manufacturer player metadata uses the actual TeknoParrot profile identity");
 string metadataCancellationRoot=Path.Combine(Path.GetTempPath(),"deadeye-query-cancellation-"+Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(metadataCancellationRoot);
 try

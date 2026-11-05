@@ -41,6 +41,11 @@ public static class App
             try
             {
                 var store = new LibraryStore(data); var state = store.Load();
+                if (args is ["--export-player-support"])
+                {
+                    File.WriteAllText(Path.Combine(data,"player-support.json"),JsonSerializer.Serialize(GamePlayers.Inventory(state.Games),JsonDefaults.Options));
+                    return;
+                }
                 if (args.Length == 1 && args[0] == "--inspect-display")
                 {
                     DisplayDiagnostics.Capture(data);

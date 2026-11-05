@@ -321,3 +321,29 @@ API keys are excluded from the app's diagnostic export.
 
 [Back to the README](../README.md) · [Automatic repairs](automatic-repairs.md) ·
 [Model setup](lightgun-setup.md) · [Library checks](library-validation.md)
+
+## Vyper stops responding after an idle period
+
+In **My Guns → Buttons & live input**, select the affected player and use
+**Reconnect this Vyper**. Windows asks for administrator permission to restart
+that specific present Blamcon USB device. Deadeye then re-registers its input
+and refreshes detection. Calibration and saved bindings are retained. The app
+never restarts a USB hub or resets every connected gun as part of this action.
+
+Canceling the Windows prompt leaves the device unchanged. If Windows cannot
+uniquely identify the device, check its cable and port. USB selective suspend
+is only one possible cause; a disabled global power setting does not prove
+that the firmware, hub or individual device is healthy. This recovery action
+is not evidence that a particular idle failure has been reproduced or cured.
+
+## Which games officially support two players?
+
+Use **Local multiplayer** in the library and inspect the player mode below each
+game. **Taking turns** differs from simultaneous play; **Online multiplayer**
+is excluded from this local filter. Game details link to the manufacturer or
+store used for the exact edition. A game's official player mode does not
+certify two independent gun inputs on the current installation.
+
+The initial catalog has 43 documented editions. Other entries display
+**Player count unverified**. Imported free-text setup notes are retained in the
+library but cannot override this source-backed metadata.

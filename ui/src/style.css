@@ -2338,3 +2338,13 @@ main {
 .game-facts dd { margin:0; font-weight:600; }
 .hero-meta { flex-wrap:wrap; }
 .hardware-tag { max-width:100%; }
+
+.player-support { margin-top: 10px; color: var(--muted); }
+.player-support-label { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; line-height: 1.45; }
+.player-support-label svg { flex-shrink: 0; }
+.game-caption .player-support { margin-top: 6px; }
+.game-caption .player-support-label { font-size: 14px; }
+.player-support-details { margin-block: 24px; }
+.player-support-details .player-support-label { font-size: 17px; font-weight: 600; }
+.player-support-details p { max-width: 70ch; color: var(--muted); }
+.player-support-details a { display: inline-block; margin-right: 20px; padding-block: 10px; text-underline-offset: 4px; }

@@ -1,0 +1,700 @@
+[
+  {
+    "titles": [
+      "Blue Estate",
+      "Blue Estate The Game"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "305380",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://store.steampowered.com/app/305380/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Mad Bullets"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "452860",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/452860/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Dead Containment"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1302230",
+    "teknoProfile": null,
+    "support": {
+      "mode": "online",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/1302230/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Death Live"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1140610",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/1140610/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Gal*Gun Returns"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1425730",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/1425730/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Rabat Protocol",
+      "Rabat Protocol:Metal Rhapsody"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2187130",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/2187130/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Touhou Crisis"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1989990",
+    "teknoProfile": null,
+    "support": {
+      "mode": "online",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/1989990/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "The House of the Dead: Remake",
+      "THE HOUSE OF THE DEAD: Remake"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1694600",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://store.steampowered.com/app/1694600/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Railbreak"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2587170",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/2587170/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Operation Wolf Returns First Mission",
+      "Operation Wolf Returns: First Mission"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1852650",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/1852650/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Air Twister"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2403620",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/2403620/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Buckshot Roulette"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2835570",
+    "teknoProfile": null,
+    "support": {
+      "mode": "online",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/2835570/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Ex-Zodiac"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1249480",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/1249480/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Jets n Guns 2",
+      "Jets'n'Guns 2"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "830820",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/830820/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "MULLET MADJACK"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2111190",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/2111190/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "POLYBIUS"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "906120",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/906120/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Remote Life",
+      "REMOTE LIFE"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1126420",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/1126420/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "RetroGrade",
+      "Retro/Grade"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "222660",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/222660/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Rez Infinite"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "636450",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/636450/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Sky Force Reloaded"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "667600",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/667600/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "STEELRAIN",
+      "Steel Rain"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "387240",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/387240/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "THE HOUSE OF THE DEAD 2: Remake"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "3376690",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/3376690/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Blood Storm: Alien Purge"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "3483190",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/3483190/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Big Buck Hunter: Ultimate Trophy"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "3102290",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-mixed",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/3102290/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "DCOP"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2542320",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/2542320/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "BangBang PewPew"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1818880",
+    "teknoProfile": null,
+    "support": {
+      "mode": "alternating",
+      "maxPlayers": null,
+      "sources": [
+        "https://store.steampowered.com/app/1818880/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "BioCrisis"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1448800",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/1448800/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "BioCrisis: Return 2 the Lab (Demo / Playtest)",
+      "BioCrisis : Return 2 the Lab"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "1835570",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/1835570/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Martian Panic"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2343850",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/2343850/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Until The Last Bullet"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2564600",
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://store.steampowered.com/app/2564600/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Blamcon Shooting Gallery"
+    ],
+    "platform": "PC / Windows",
+    "steamAppId": "2650200",
+    "teknoProfile": null,
+    "support": {
+      "mode": "single",
+      "maxPlayers": 1,
+      "sources": [
+        "https://store.steampowered.com/app/2650200/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "House of the Dead: Scarlet Dawn"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "HOTDSD",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://segaarcade.com/games/house-of-the-dead-scarlet-dawn-theatre"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Luigi's Mansion Arcade"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "LuigisMansion",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://segaarcade.com/games/luigis-mansion-arcade"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Transformers: Shadows Rising"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "TransformersShadowsRising",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://segaarcade.com/games/transformers-shadows-rising"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Transformers: Human Alliance"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "Transformers",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://segaarcade.com/games/transformers-human-alliance"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Mission Impossible"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "MissionImpossible",
+    "support": {
+      "mode": "linked",
+      "maxPlayers": 4,
+      "sources": [
+        "https://segaarcade.com/games/mission-impossible-arcade"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "Der Originalautomat bietet vier Spieler auf zwei Bildschirmen. Der verknüpfte Betrieb ist mit zwei lokal eingerichteten Guns noch nicht geprüft."
+    }
+  },
+  {
+    "titles": [
+      "Walking Dead"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "WalkingDead",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://rawthrills.com/wp-content/uploads/2020/02/Walking-Dead_manual.pdf"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Aliens Armageddon"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "AliensArmageddon",
+    "support": {
+      "mode": "local-mixed",
+      "maxPlayers": 2,
+      "sources": [
+        "https://rawthrills.com/wp-content/uploads/manuals/aliens_manual.pdf"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Terminator Salvation"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "Terminator",
+    "support": {
+      "mode": "local-mixed",
+      "maxPlayers": 2,
+      "sources": [
+        "https://rawthrills.com/wp-content/uploads/manuals/t4_manual.pdf"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Jurassic Park"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "JurassicPark",
+    "support": {
+      "mode": "local-mixed",
+      "maxPlayers": 2,
+      "sources": [
+        "https://rawthrills.com/wp-content/uploads/2023/08/JP-Manual-r11.pdf"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Dead Space: Extraction"
+    ],
+    "platform": "Nintendo Wii",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.nintendo.co.jp/wii/software/rzjj/index.html"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Resident Evil - The Umbrella Chronicles"
+    ],
+    "platform": "Nintendo Wii",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.nintendo.com/en-gb/Games/Wii/Resident-Evil-The-Umbrella-Chronicles-282882.html"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Resident Evil - The Darkside Chronicles"
+    ],
+    "platform": "Nintendo Wii",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.nintendo.com/en-gb/Games/Wii/Resident-Evil-The-Darkside-Chronicles-282871.html"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  }
+]

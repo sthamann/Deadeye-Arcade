@@ -1,9 +1,8 @@
-Keep selected guns in the game when devices reconnect, and catch missing controls before launch.
+Find local multiplayer games and reconnect a stalled Vyper from Gun Studio.
 
-- Use fresh USB discovery for ordinary frontend launches, matching the shared game test path. Recover changed mouse and keyboard interfaces through the physical gun identity while preserving player slots and learned controls.
-- Report an unavailable selected P1 before clearing game assignments. Record each launch player and discovery exclusion in the input log.
-- Read back supported profiles after preparation. Missing required Start, trigger or other action routes produce a specific setup error before the game process starts. Aim and button tests remain optional.
-- Prepare the installed first House of the Dead Remake ArcadePlugin for its DemulShooter multiplayer route. Read actual helper assignments and fixed Start keys for the controls legend; use the temporary Vyper magazine reload route and preserve the original settings.
-- Add profile regressions for all 16 P1/P2 combinations of RS3, Sinden, XGunner and Vyper using Walking Dead action identifiers, plus USB reconnect and ArcadePlugin mode tests.
+- Display player modes below library entries and in game details: local co-op, local versus, taking turns, online and linked cabinets. Filter for local multiplayer and open manufacturer/store sources for the exact game edition.
+- Include an initial catalog of 43 documented editions. Unknown entries are visibly unverified; imported notes cannot silently become official player metadata.
+- Reconnect only the selected present Vyper USB device, then refresh RawInput registration and discovery. Windows requests administrator permission. Calibration and saved mappings are retained; hubs and wildcard resets are excluded.
+- Export structured player metadata with `--export-player-support` for diagnostics.
 
-The local core suite passed 793 checks. These are profile and software checks. Physical shots, tracking and complete two-player gameplay remain separate acceptance steps. See [verification notes](https://github.com/sthamann/Deadeye-Arcade/blob/v0.3.73/docs/verification-0.3.73.md).
+Game player counts, generated control profiles and physical two-gun gameplay are separate verification steps. The Vyper idle failure still requires a reproduced long-idle test; a successful restart does not prove its root cause is fixed.

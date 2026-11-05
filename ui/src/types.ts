@@ -86,6 +86,7 @@ export type GunSignal = {
   action: string;
 };
 export type State = {
+  playerSupport?: Record<string, PlayerSupport | null>;
   inputTransport?: {generation:number};
   update?: { status: string; progress: number; error: string; checkedAt?: string | null; release?: null | {version: string; notes: string; page: string} };
   guns?: PhysicalGun[];
@@ -155,6 +156,13 @@ export type State = {
     history: { gameId: string; game: string; ruleId: string; status: string; message: string; files: string[] }[]; catalog: {id:string;name:string;mode:string;scope:string;source:string;verification:string}[];
   };
   native: boolean;
+};
+export type PlayerSupport = {
+  mode: "single" | "local-coop" | "local-versus" | "local-mixed" | "alternating" | "asymmetric" | "online" | "linked";
+  maxPlayers: number | null;
+  sources: string[];
+  checkedAt: string;
+  note?: string | null;
 };
 export type Input = {
   deviceId: string;

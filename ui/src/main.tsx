@@ -52,6 +52,7 @@ import { ShootingRange } from "./ShootingRange";
 import { GunScroll } from "./GunScroll";
 import { MediaPreview } from "./MediaPreview";
 import { releaseYear, sortLibrary } from "./LibraryOrder";
+import { PlayerInfo, supportsLocalPlayers } from "./PlayerSupport";
 import { FilePicker, ArcadeKeyboard, type PickerState } from "./ArcadeDialogs";
 type Page = "play" | "guns" | "import" | "settings";
 type Modal =
@@ -458,6 +459,7 @@ function App() {
   const games = allGames.filter(
     (g) =>
       (filter !== "favorites" || g.favorite) &&
+      (filter !== "multiplayer" || supportsLocalPlayers(state.playerSupport?.[g.id])) &&
       (filter !== "modern" ||
         g.source === "teknoparrot" ||
         g.platform === "TeknoParrot") &&
@@ -704,13 +706,7 @@ function App() {
                           </button>
                         )}
                       </div>
-                      {featured.players && (
-                        <p className="players-note">
-                          {featured.players}
-                          {" " +
-                            t("\u00B7 Gun-Einrichtung separat pr\u00FCfen")}
-                        </p>
-                      )}
+                      <PlayerInfo support={state.playerSupport?.[featured.id]}/>
                     </div>
                     <div className="hero-art">
                       {featured.cover ||
@@ -806,6 +802,7 @@ function App() {
                   <div className="filters">
                     {[
                       ["all", t("Alle Spiele")],
+                      ["multiplayer", t("Lokal zu zweit")],
                       ["modern", t("Modern Arcade")],
                       ["classic", t("Klassiker")],
                       ["favorites", t("Favoriten")],
@@ -879,6 +876,7 @@ function App() {
                         </div>
                         <div className="game-caption">
                           <strong>{game.title}</strong>
+                          <PlayerInfo support={state.playerSupport?.[game.id]}/>
                           <span>{game.releaseYear ? `${game.releaseYear} · ` : ""}{game.platform}</span>
                         </div>
                       </button>
@@ -1718,15 +1716,7 @@ function App() {
                     </ul>
                   </div>
                 )}
-                {modal.game.players && (
-                  <p>
-                    {t("Spieler laut Spiel:") + " "}
-                    {modal.game.players}
-                    {t(
-                      ". Zwei eingerichtete Guns sind noch separat zu pr\u00FCfen.",
-                    )}
-                  </p>
-                )}
+                <PlayerInfo support={state.playerSupport?.[modal.game.id]} details/>
                 {state.gameChecks?.[modal.game.id] && (
                   <div className="setup-warning"><strong>{message(state.gameChecks[modal.game.id]!.title)}</strong>
                     {state.gameChecks[modal.game.id]!.notes.map((note,i)=><p key={i}>{message(note)}</p>)}

@@ -395,6 +395,10 @@ export function GunStudio({
                   {t("Software-Einrichtung")}
                 </span>
               </div>
+              {sameModel && model === "blamcon" && <div className="usb-recovery">
+                <button className="secondary" disabled={busy || !!state.learning} onClick={()=>send("reconnect-vyper", {player})}>{t("Diese Vyper neu verbinden")}</button>
+                <p className="studio-caption">{t("Bei ausbleibenden Eingaben nach einer Pause. Windows fragt nach Administratorrechten und startet nur diese Gun neu. Kalibrierung und Belegung bleiben erhalten.")}</p>
+              </div>}
             </div>
             <div className="mapping-panel">
               <h2>{t("Was macht welcher Knopf?")}</h2>
