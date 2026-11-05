@@ -176,6 +176,10 @@ Check(rendererIdentity.Update(29999,22L,false)=="observing" && rendererIdentity.
 replacedWindow.Update(1000,true,false);replacedWindow.Update(10000,false,false);replacedWindow.Update(12000,true,false);
 Check(replacedWindow.Update(20000,true,false)=="observing" && replacedWindow.Update(27000,true,false)=="passed","A disappearing splash or replaced renderer cannot contribute stale observation time");
 Check(new GameTestObservation(15).Update(90000,false,false)=="startup-timeout" && new GameTestObservation(15).Update(1000,true,true)=="exited-early","A game that never renders or exits early cannot pass a library launch test");
+Check(GameTestObservation.LibraryDeadline(15)>TimeSpan.FromSeconds(GameTestObservation.PreparationTimeoutSeconds+GameTestObservation.DefaultStartupSeconds+15)
+    && GameTestObservation.LibraryDeadline(120)-GameTestObservation.LibraryDeadline(15)==TimeSpan.FromSeconds(105),
+    "The library watchdog allows the worker's full preparation, startup and observation plus bounded cleanup instead of cancelling valid preparation at 165 seconds");
+Throws(()=>GameTestObservation.LibraryDeadline(4),"The library deadline rejects an invalid observation interval");
 var flappingWindow=new GameTestObservation(15);flappingWindow.Update(1000,true,false);flappingWindow.Update(104000,false,false);
 Check(flappingWindow.Update(105000,true,false)=="startup-timeout","Repeated window replacement has a finite overall deadline");
 var captureMenu=new GunMenuLearning("blamcon");

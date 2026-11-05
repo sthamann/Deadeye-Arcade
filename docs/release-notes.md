@@ -1,3 +1,7 @@
+Give automatic game checks their complete preparation and startup time.
+
+- The library watchdog now includes the worker’s preparation, renderer startup, observation and cleanup budgets. A slow first preparation is no longer cut off at 165 seconds while its own three-minute allowance is still running. Hung workers and emergency cancellation remain bounded.
+
 Prepare missing steering and selection controls in supported arcade profiles.
 
 - After Dark maps its shared steering controls to P1 Left and Right and its seat-stop input to Up. Exact vendor action identifiers keep the two guns, credits and Start separate.

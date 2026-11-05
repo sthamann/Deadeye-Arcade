@@ -2,8 +2,17 @@ namespace Reaper.Core;
 
 // Preparation/loading is not part of the observation interval. A replaced or
 // missing renderer must become stable again before the interval can pass.
-public sealed class GameTestObservation(int seconds, int startupSeconds = 90)
+public sealed class GameTestObservation(int seconds, int startupSeconds = GameTestObservation.DefaultStartupSeconds)
 {
+    public const int PreparationTimeoutSeconds = 180;
+    public const int DefaultStartupSeconds = 90;
+    // The parent must allow every worker phase and still bound a stuck child.
+    public static TimeSpan LibraryDeadline(int seconds)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(seconds,5);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(seconds,120);
+        return TimeSpan.FromSeconds(PreparationTimeoutSeconds+DefaultStartupSeconds+seconds+60);
+    }
     private long? readySince;
     private long window;
     public long? FirstReadyAt { get; private set; }

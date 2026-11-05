@@ -70,12 +70,13 @@ internal static class LibraryTests
                 {
                     if (File.Exists(resultPath)) File.Move(resultPath, resultPath + ".previous", true);
                     var info = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false, CreateNoWindow = true };
-                    info.ArgumentList.Add("--test-game"); info.ArgumentList.Add(game.Id); info.ArgumentList.Add("15");
+                    const int observationSeconds=15;
+                    info.ArgumentList.Add("--test-game"); info.ArgumentList.Add(game.Id); info.ArgumentList.Add(observationSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture));
                     using var child = NativeOwnedLaunch.Start(info, handle => childJob = NativeOwnedLaunch.CreateJob(handle));
                     var deadline = Stopwatch.StartNew();
                     while (!child.HasExited)
                     {
-                        if (stop.WaitOne(0) || deadline.Elapsed > TimeSpan.FromSeconds(165))
+                        if (stop.WaitOne(0) || deadline.Elapsed > GameTestObservation.LibraryDeadline(observationSeconds))
                         {
                             timedOut = !stop.WaitOne(0); cancelled = !timedOut;
                             // The child may still be booting before it creates its stop event.

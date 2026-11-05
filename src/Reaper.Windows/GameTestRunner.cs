@@ -59,7 +59,7 @@ internal static class GameTestRunner
                 // Asset preparation can exceed the renderer startup budget on
                 // a first launch. Begin that budget after the real profile is
                 // prepared, while retaining a separate bounded preparation wait.
-                if(preparedAt is null && elapsed.ElapsedMilliseconds>=180_000)
+                if(preparedAt is null && elapsed.ElapsedMilliseconds>=GameTestObservation.PreparationTimeoutSeconds*1000L)
                     { preparationTimedOut=true; break; }
                 long launchElapsed = preparedAt is {} prepared ? elapsed.ElapsedMilliseconds-prepared : 0;
                 observation.Update(launchElapsed, session.GameWindowAvailable?session.GameWindow.ToInt64():0L, run.IsCompleted);

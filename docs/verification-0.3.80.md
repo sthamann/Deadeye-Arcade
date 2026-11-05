@@ -4,6 +4,6 @@ The additional After Dark routes are checked through the actual TeknoParrot prof
 
 Music GunGun 2 receives separate P1 Decision and selection directions through the same saved-profile path for all four models. The exact profile and input identifiers are required. Shared unreviewed Select/Enter actions remain pending.
 
-Three added player-metadata checks preserve edition isolation for After Dark, Silent Hill Arcade and House of the Dead 4. The local suite passed 857 meaningful core checks. Windows release CI and installed native results are recorded after execution.
+Three added player-metadata checks preserve edition isolation for After Dark, Silent Hill Arcade and House of the Dead 4. The local suite passed 857 meaningful core checks. Windows release CI passed 892 meaningful core checks and 36 Input Lab self-check cases. Installed native results remain a separate observation.
 
 The ongoing full-library native check uses installed 0.3.78. Its results cannot be labelled as 0.3.80 tests or a complete gameplay acceptance.
