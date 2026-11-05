@@ -30,6 +30,9 @@ Check(GamePlayers.Read(playerFixture with { Title="BangBang PewPew" })?.Mode == 
 Check(GamePlayers.Read(playerFixture with { Title="Unknown edition", Players="2 players confirmed" }) is null, "Unverified imported player notes never become official metadata");
 Check(GamePlayers.Read(playerFixture with { Title="Renamed game", MetadataSources=["https://store.steampowered.com/app/3376690/"] })?.Mode == "local-coop", "Stable Steam identity survives renamed titles");
 Check(GamePlayers.Read(playerFixture with { Source="teknoparrot", Platform="Arcade", SourcePath=@"C:\Games\UserProfiles\WalkingDead.xml", Title="Renamed arcade game" })?.MaxPlayers == 2, "Manufacturer player metadata uses the actual TeknoParrot profile identity");
+Check(GamePlayers.Read(playerFixture with {Title="The House of the Dead - Overkill",Platform="Nintendo Wii"}) is {Mode:"local-mixed",MaxPlayers:4,Note:not null},"Wii Overkill keeps two-player story separate from its four-player minigames");
+Check(GamePlayers.Read(playerFixture with {Title="Link's Crossbow Training",Platform="Nintendo Wii"}) is {Mode:"alternating",MaxPlayers:4},"Crossbow Training is four alternating players, not four simultaneous guns");
+Check(GamePlayers.Read(playerFixture with {Title="Sin & Punishment - Star Successor",Platform="Nintendo Wii"}) is {Mode:"asymmetric",MaxPlayers:2},"The Wii Star Successor edition names the assisting second player without borrowing N64 controls");
 string metadataCancellationRoot=Path.Combine(Path.GetTempPath(),"deadeye-query-cancellation-"+Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(metadataCancellationRoot);
 try
@@ -589,6 +592,9 @@ RButton::y
     Rpcs3Setup.Configure(rpcGame,[rpcVyper]);
     string vyperRaw=File.ReadAllText(Path.Combine(rpcRoot,"config","raw_mouse.yml"));
     Check(Rpcs3Setup.YamlValue(vyperRaw,["Player 1"],"Button 2")=="Key "+Rpcs3Setup.EncodeKey(77) && Rpcs3Setup.YamlValue(vyperRaw,["Player 1"],"Button 3")=="Button 2" && Rpcs3Setup.YamlValue(vyperRaw,["Player 1"],"Button 4")=="Button 3" && Rpcs3Setup.YamlValue(vyperRaw,["Player 1"],"Button 7")=="Key "+Rpcs3Setup.EncodeKey(53),"RPCS3 writes Vyper A, B, captured magazine and Select to separate raw Move channels");
+    Check(Rpcs3Setup.YamlValue(vyperRaw,["Player 1"],"Button 5")=="Key "+Rpcs3Setup.EncodeKey(40)
+        && StartupControls.ForPlayer(Rpcs3Setup.Read(rpcGame,[rpcVyper]),rpcVyper).Any(h=>h.Function=="Cross" && h.Resolved && h.ControlIds.Contains("down")),
+        "Vyper Move Cross uses the reachable D-pad Down when its recoil selector has no button route");
     rpcRaw=vyperRaw;
     File.WriteAllText(rpcExe,"older unsupported emulator");
     Check(Rpcs3Setup.Configure(rpcGame,[p1,p2])==rpcGame && File.ReadAllText(Path.Combine(rpcRoot,"config","raw_mouse.yml"))==rpcRaw,"Older RPCS3 builds remain unchanged until their Raw Mouse backend is available");
@@ -631,6 +637,14 @@ RButton::y
     RetroArchSetup.Configure(nesGame,root,[p1,p2],[p2.MouseId,p1.MouseId]);
     string nesText=File.ReadAllText(RetroArchSetup.ProfilePath(nesGame,root));
     Check(nesText.Contains("input_libretro_device_p2 = \"258\"") && nesText.Contains("input_player2_mouse_index = \"1\"") && nesText.Contains("deadeye_player2_physical = \"1\""),"NES Zapper uses original hardware port 2 while the gun and legend remain physical P1");
+    Check(OverlayControls.Read(raGame,root,[p1]).Rows.All(r=>r.SourceKey is "gun_trigger" or "gun_reload" or "gun_aux_a" or "gun_aux_b"),"GunCon audits its real trigger, reload and A/B inputs without inventing C, Start or D-pad requirements");
+    Check(OverlayControls.Read(nesGame,root,[p1,p2]).Rows.All(r=>r.Player==1 && r.SourceKey is "gun_trigger" or "a" or "b" or "start" or "select"),"NES separates the one Zapper from its P1 menu controller and does not invent a second gun");
+    var profileDevices=new InputDevice[]{new(p1.MouseId,"P1 mouse","mouse",true),new(p2.MouseId,"P2 mouse","mouse",true)};
+    var sharedPrepared=GameInputProfiles.Configure(raGame,root,[p1,p2],profileDevices,[p2.MouseId,p1.MouseId]);
+    Check(sharedPrepared.Arguments.Last().Contains(RetroArchSetup.ProfilePath(raGame,root)) && File.ReadAllText(RetroArchSetup.ProfilePath(raGame,root)).Contains("input_player1_mouse_index = \"1\""),"Shared maintenance and launch preparation creates the actual RetroArch profile and launch arguments");
+    string sharedProfile=File.ReadAllText(RetroArchSetup.ProfilePath(raGame,root));
+    GameInputProfiles.Configure(raGame,root,[],[],[]);
+    Check(File.ReadAllText(RetroArchSetup.ProfilePath(raGame,root))==sharedProfile,"A keyboard-only preparation preserves existing gun profiles");
     var collidingRa=raGame with {Id="shared-keyboards"};
     var sameKeys=GunSystems.DefaultMap(1,"xgunner");
     var sharedGuns=new[]{new GunBinding(1,"xg-mouse","xg-keyboard",SystemId:"xgunner",ButtonMap:sameKeys),new GunBinding(2,"other-mouse","other-keyboard",SystemId:"xgunner",ButtonMap:sameKeys)};
@@ -653,6 +667,20 @@ RButton::y
     Check(GameControlAudit.Read(saturnRa,root,[p1,p2]).Players.Single(p=>p.Player==1).Status=="needs-action","Removing every Saturn reload entry remains a required-action failure");
     const string exclusiveHod3="[Game options]\r\nFullscreen:1\r\nResolution:2\r\nP1Controls:0\r\n";
     string borderlessHod3=Hod3Presentation.WindowedConfig(exclusiveHod3,Hod3Presentation.AffectedExecutableMd5);
+    var hod3Game=multiGame with {Title="The House of the Dead III",Executable=Path.Combine(multiRoot,"Hotd3Arcade_Launcher.exe"),
+        Helpers=[new(helperExe,["-target=windows","-rom=hod3pc"],multiRoot)]};
+    File.WriteAllText(Hod3Presentation.ConfigPath(hod3Game),"[Game options]\nP1Controls:1\nP2Controls:1\nKeyboard1pStart:9\nKeyboard2pStart:9\nFreeplay:1\nResolution:2\n");
+    GunBinding[] hod3Guns=[p1 with {KeyboardId="hod3-keyboard-1"},p2 with {KeyboardId="hod3-keyboard-2"}];
+    GameInputProfiles.Configure(hod3Game,root,hod3Guns,profileDevices,[p1.MouseId,p2.MouseId]);
+    string hod3Text=File.ReadAllText(Hod3Presentation.ConfigPath(hod3Game));
+    Check(hod3Text.Contains("P1Controls:0") && hod3Text.Contains("P2Controls:0") && hod3Text.Contains("Keyboard1pStart:2") && hod3Text.Contains("Keyboard2pStart:3") && hod3Text.Contains("Resolution:2"),
+        "HOTD III shared preparation sets the required keyboard mode and live Start scan codes while preserving graphics");
+    Check(GameControlAudit.Read(hod3Game,root,hod3Guns).Status=="mapping-checked"
+        && GameGunProfiles.Vyper(hod3Game,vyper).PedalMode=="right",
+        "HOTD III audits trigger, reload, path selection and Start and routes Vyper magazine to its real fixed reload input");
+    var hod3Replay=await ControlSimulation.Run([hod3Game],root,hod3Guns);
+    Check(hod3Replay.Games.Single().Status=="profile-routed" && hod3Replay.Games.Single().Actions.All(a=>a.Isolated),
+        "HOTD III replay checks independent Start keys and gun buttons through the prepared helper and mod configuration");
     Check(borderlessHod3==exclusiveHod3.Replace("Fullscreen:1","Fullscreen:0"),"The reviewed HOTD III build changes only the exclusive fullscreen flag");
     Check(Hod3Presentation.WindowedConfig(exclusiveHod3,"another-build")==exclusiveHod3,"Unknown HOTD III executable versions retain their presentation settings");
     Check(Hod3Presentation.WindowedConfig(borderlessHod3,Hod3Presentation.AffectedExecutableMd5)==borderlessHod3,"Windowed HOTD III configuration remains stable across repeated setup");
@@ -1030,6 +1058,18 @@ RButton::y
     var marsActions=OverlayControls.Read(repair with{SourcePath=matrixPath},root,replayPair).Rows.Where(r=>r.Function.EndsWith("Weapon Change")).ToArray();
     Check(marsActions.Length==2 && marsActions.All(r=>r.Expression==(r.Player==1?"P1|mouse:2":"P2|mouse:3")) && (await ControlSimulation.Replay(marsActions,replayPair)).All(r=>r.Status=="profile-routed"),"Mars Sortie weapon change reaches Vyper A and XGunner's middle button through the actual profile writer and reader");
     Check(TeknoActionRoutes.Find("WartranTroopers","Shoulder P1","P1Button2") is null && TeknoActionRoutes.Find("WartranTroopers","Weapon Change P1","P1Button3") is null,"A shared emulation profile cannot apply Mars Sortie routes to different Wartran actions or routing identifiers");
+    var wartran=new XDocument(matrixTemplate);wartran.Root!.Element("EmulationProfile")!.Value="WartranTroopers";
+    wartran.Descendants("JoystickButtons").Where(r=>r.Element("ButtonName")?.Value.EndsWith(" Reload")==true).Remove();
+    foreach(int p in new[]{1,2})foreach(var (name,key) in new[]{("Option","Button2"),("Shoulder","Button3"),("Sense","Button4")})
+        wartran.Root.Element("JoystickButtons")!.Add(new XElement("JoystickButtons",new XElement("ButtonName","Player "+p+" "+name),new XElement("InputMapping","P"+p+key)));
+    wartran.Save(Path.Combine(tp,"GameProfiles","model-matrix.xml"));
+    foreach(string wartranModel in GunSystems.Catalog.Select(g=>g.Id))
+    {
+        wartran.Save(matrixPath);var pair=new[]{MatrixGun(wartranModel,1),MatrixGun(wartranModel,2)};
+        TeknoGunSetup.Configure(repair with{SourcePath=matrixPath},pair);
+        Check(GameControlAudit.Read(repair with{SourcePath=matrixPath},root,pair).Status=="mapping-checked",
+            "Wartran Option, Shoulder and Sense remain separately reachable on both "+wartranModel+" guns");
+    }
     foreach(string routeModel in GunSystems.Catalog.Select(g=>g.Id))
     {
         var throwProfile=new XDocument(matrixTemplate);throwProfile.Root!.Element("EmulationProfile")!.Value="WartranTroopers";
@@ -1090,6 +1130,9 @@ RButton::y
     var cabinetSelect=new ControlRow(1,"Select","Unassigned","TeknoParrot",SourceKey:"Service1");
     Check(!GameControlAudit.GameplayAction(cabinetSelect,aliens) && GameControlAudit.GameplayAction(cabinetSelect,repair)
         && GameControlAudit.GameplayAction(cabinetSelect with{SourceKey="P1Button3"},aliens),"Extermination cabinet Select is excluded by its exact service route; real Select actions and other games remain audited");
+    Check(!GameControlAudit.GameplayAction(new(1,"Enter","","",SourceKey:"P1ButtonUp"),aliens with{SourcePath="RazingStorm.xml"})
+        && GameControlAudit.GameplayAction(new(1,"Enter","","",SourceKey:"P1Button5"),aliens with{SourcePath="RaccoonRampage.xml"}),
+        "Cabinet menu Enter cannot block Razing Storm while Raccoon Rampage's actual game confirm remains required");
     TeknoGunSetup.Configure(aliens,[new(1,"mouse-p1"),new(2,"mouse-p2")]);
     var alienXml=XDocument.Load(alienProfile);
     Check(alienXml.Descendants("JoystickButtons").Where(r=>r.Element("ButtonName")?.Value.EndsWith("Flame")==true).All(r=>r.Element("RawInputButton")?.Element("MouseButton")?.Value=="RightButton") && alienXml.Descendants("DevicePath").Any(e=>e.Value=="mouse-p2"),"Both Extermination flame weapons use the proper gun's right button");

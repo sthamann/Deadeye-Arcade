@@ -20,7 +20,8 @@ internal sealed class GameInputPreparation : IAsyncDisposable
         var setup = new GameInputPreparation(data);
         try
         {
-            var before = KnownFixes.Snapshot(KnownFixes.InputFiles(game, data));
+            string[] Files() => KnownFixes.InputFiles(game, data).Concat(KnownFixes.MultiplayerFiles(game)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+            var before = KnownFixes.Snapshot(Files());
             using var raw = new RawInput(); raw.Refresh();
             var requested = bindings.Where(b => b.Player is 1 or 2).ToArray();
             var physical = GunDiscovery.Scan(raw.Devices);
@@ -35,18 +36,11 @@ internal sealed class GameInputPreparation : IAsyncDisposable
             if(game.Source=="mame")
             {
                 if(MameControls.Metadata(game,data) is null)await MameMetadata.Prepare(game,data,cancellationToken);
-                MameControls.Configure(game,data,setup.Players);
             }
-            bool indexAvailable = GunConnections.CanIndexMice(setup.Players, raw.Devices);
-            setup.Game = indexAvailable ? RetroArchSetup.Configure(game, data, setup.Players, raw.MouseOrder) : game;
-            setup.Game = FlycastSetup.ResolveContent(setup.Game,validateArchive:true);
-            setup.Game = Rpcs3Setup.Configure(setup.Game, setup.Players);
-            setup.Game = TimeCrisis5Controls.Configure(setup.Game, setup.Players);
-            if (indexAvailable) SupermodelSetup.Configure(game, setup.Players, raw.Devices);
-            else setup.Log("Physical USB guns are present but their RawInput mice are hidden in this session. Device-name assignments retained; mouse-index profiles require a local launch.");
-            if (indexAvailable && FlycastSetup.IsFlycast(game))
-                FlycastSetup.Configure(game, setup.Players, raw.Devices,
-                    raw.Devices.ToDictionary(d => d.Id, d => InputDeviceNames.Name(d.Id) ?? (d.Kind == "mouse" ? "Mouse" : "Keyboard"), StringComparer.OrdinalIgnoreCase));
+            setup.Game = GameInputProfiles.Configure(game, data, setup.Players, raw.Devices, raw.MouseOrder,
+                raw.Devices.ToDictionary(d => d.Id, d => InputDeviceNames.Name(d.Id) ?? (d.Kind == "mouse" ? "Mouse" : "Keyboard"), StringComparer.OrdinalIgnoreCase));
+            if (!GunConnections.CanIndexMice(setup.Players, raw.Devices))
+                setup.Log("Physical USB guns are present but their RawInput mice are hidden in this session. Device-name assignments retained; mouse-index profiles require a local launch.");
             if (DolphinSetup.IsDolphin(game) && setup.Players.Any(b => b.Player == 1 && DolphinSetup.Supports(b)))
             {
                 string pack = await DolphinAccuracyPackage.Prepare(data,cancellationToken);
@@ -82,7 +76,7 @@ internal sealed class GameInputPreparation : IAsyncDisposable
                 catch(Exception error) when(error is IOException or UnauthorizedAccessException or TimeoutException)
                 { if(GameGunProfiles.FixedMouseReload(game)) throw new IOException(I18n.T("Vyper-Magazin für dieses Spiel nicht eingerichtet: ")+error.Message,error); setup.Log($"P{binding.Player} Blamcon settings unavailable: {error.Message}"); }
             }
-            KnownFixes.RecordChanges(game, data, DolphinSetup.IsDolphin(game) ? "dolphin-accuracy" : "usb-identity", before, KnownFixes.InputFiles(game, data));
+            KnownFixes.RecordChanges(game, data, DolphinSetup.IsDolphin(game) ? "dolphin-accuracy" : "usb-identity", before, Files());
             return setup;
         }
         catch { await setup.DisposeAsync(); throw; }

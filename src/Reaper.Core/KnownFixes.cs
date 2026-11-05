@@ -253,6 +253,7 @@ public static class KnownFixes
         if(LegacyHod2(game))files.AddRange(new[]{Path.Combine(Path.GetDirectoryName(Path.GetFullPath(game.Executable))!,"ddraw.dll"),Path.Combine(Path.GetDirectoryName(Path.GetFullPath(game.Executable))!,"DDrawCompat.ini")});
         if(game.Source=="teknoparrot")files.AddRange(new[]{game.SourcePath,TeknoRequirements.TemplatePath(game)});
         if(TimeCrisis5Controls.Supports(game)) files.Add(TimeCrisis5Controls.ManagedPath(game));
+        if(Hod3Controls.Supports(game)) files.Add(Hod3Presentation.ConfigPath(game));
         if(game.Source=="mame")
         {
             files.Add(Path.Combine(data,"controllers","reaper.cfg"));

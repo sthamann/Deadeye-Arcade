@@ -139,7 +139,7 @@
     "teknoProfile": null,
     "support": {
       "mode": "local-coop",
-      "maxPlayers": null,
+      "maxPlayers": 2,
       "sources": [
         "https://store.steampowered.com/app/2587170/"
       ],
@@ -156,7 +156,7 @@
     "teknoProfile": null,
     "support": {
       "mode": "local-coop",
-      "maxPlayers": null,
+      "maxPlayers": 2,
       "sources": [
         "https://store.steampowered.com/app/1852650/"
       ],
@@ -352,7 +352,7 @@
     "teknoProfile": null,
     "support": {
       "mode": "local-coop",
-      "maxPlayers": null,
+      "maxPlayers": 2,
       "sources": [
         "https://store.steampowered.com/app/3376690/"
       ],
@@ -695,6 +695,77 @@
         "https://www.nintendo.com/en-gb/Games/Wii/Resident-Evil-The-Darkside-Chronicles-282871.html"
       ],
       "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "Aliens: Extermination"
+    ],
+    "platform": "Arcade — Global VR PC",
+    "steamAppId": null,
+    "teknoProfile": "AliensExtermination",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.globalvr.com/products_ae.html"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": null
+    }
+  },
+  {
+    "titles": [
+      "The House of the Dead - Overkill"
+    ],
+    "platform": "Nintendo Wii",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-mixed",
+      "maxPlayers": 4,
+      "sources": [
+        "https://www.nintendo.com/en-gb/Games/Wii/The-House-of-the-Dead-OVERKILL-283476.html"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "Two-player co-op story; up to four players in competitive minigames."
+    }
+  },
+  {
+    "titles": [
+      "Link’s Crossbow Training",
+      "Link's Crossbow Training"
+    ],
+    "platform": "Nintendo Wii",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "alternating",
+      "maxPlayers": 4,
+      "sources": [
+        "https://www.nintendo.com/en-gb/Games/Wii/Link-s-Crossbow-Training-281782.html"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "Players take turns with one Wii Zapper."
+    }
+  },
+  {
+    "titles": [
+      "Sin and Punishment - Star Successor",
+      "Sin & Punishment: Successor of the Skies",
+      "Sin & Punishment - Star Successor"
+    ],
+    "platform": "Nintendo Wii",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "asymmetric",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.nintendo.com/en-gb/News/2010/Uncover-the-past-and-present-of-the-Sin-and-Punishment-series-252513.html"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "Player two assists by shooting; player one controls movement."
     }
   }
 ]

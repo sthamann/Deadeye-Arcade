@@ -124,7 +124,7 @@ public static class ControlSimulation
         var scoped=Regex.Match(atom,@"^P([12])\|(mouse:[1-5]|key:[0-9]+)$");
         if(scoped.Success)
         {
-            bool globalKeyboard=row.Evidence=="RetroArch-Konfiguration" && scoped.Groups[2].Value.StartsWith("key:");
+            bool globalKeyboard=(row.Evidence=="RetroArch-Konfiguration" || row.Evidence.EndsWith(" · global keyboard")) && scoped.Groups[2].Value.StartsWith("key:");
             string token=scoped.Groups[2].Value;
             bool sameDevice=token.StartsWith("mouse:")?source.MouseId.Equals(target.MouseId,StringComparison.OrdinalIgnoreCase)
                 :source.KeyboardId?.Equals(target.KeyboardId,StringComparison.OrdinalIgnoreCase)==true;

@@ -189,10 +189,6 @@ public sealed class GameSession
             bridge=input.Bridge;
             game = input.Game;
             var players = input.Players;
-            var helperFiles = KnownFixes.MultiplayerFiles(game);
-            var beforeHelpers = KnownFixes.Snapshot(helperFiles);
-            MultiplayerSetup.Configure(game, players);
-            KnownFixes.RecordChanges(game, dataDirectory, "multiplayer-plugin", beforeHelpers, helperFiles);
             foreach (var helper in game.Helpers ?? [])
             {
                 cancellationToken.ThrowIfCancellationRequested();

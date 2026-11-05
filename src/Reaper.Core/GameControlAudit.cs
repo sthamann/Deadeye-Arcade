@@ -14,7 +14,14 @@ public static class GameControlAudit
     public static bool GameplayAction(ControlRow row,GameEntry game) => GameplayAction(row.Function)
         // Extermination calls its cabinet service-menu selector simply "Select".
         // Keep real gameplay Select controls in all other profiles audited.
-        && !(game.Source=="teknoparrot" && Path.GetFileNameWithoutExtension(game.SourcePath)=="AliensExtermination" && row.SourceKey=="Service1");
+        && !(game.Source=="teknoparrot" && ((Path.GetFileNameWithoutExtension(game.SourcePath),row.SourceKey,row.Function) switch {
+            ("AliensExtermination" or "FarCryParadiseLost","Service1","Select") => true,
+            // The installed templates place Enter beside Select Up/Down. These
+            // are cabinet service-menu actions, not the player's Start input.
+            ("cobrataw" or "vnight","P1Button1","Enter") => true,
+            ("DarkEscape4D" or "DSPS" or "RazingStorm" or "AKB48","P1ButtonUp","Enter") => true,
+            _ => false
+        }));
     public static string[] RequiredDolphin(string id)
     {
         string[] common = ["Buttons/A", "Buttons/B", "Buttons/+"];
@@ -43,7 +50,7 @@ public static class GameControlAudit
         bool dolphin = DolphinSetup.IsDolphin(game);
         string? id = dolphin ? DolphinSetup.DiscId(game) : null;
         string[] required = id is null ? [] : RequiredDolphin(id);
-        bool requiredActionsChecked = dolphin ? required.Length > 0 : tekno is not null && tekno.Rows.All(r=>r.Player is >=1 and <=4) || mame is not null || TimeCrisis5Controls.Supports(game) || MultiplayerSetup.SupportsHouseDeadRemake(game);
+        bool requiredActionsChecked = dolphin ? required.Length > 0 : tekno is not null && tekno.Rows.All(r=>r.Player is >=1 and <=4) || mame is not null || TimeCrisis5Controls.Supports(game) || MultiplayerSetup.SupportsHouseDeadRemake(game) || Hod3Controls.Supports(game);
         bool relativeAim=game.Source=="teknoparrot"&&File.Exists(game.SourcePath)
             &&System.Xml.Linq.XDocument.Load(game.SourcePath).Descendants("FieldInformation").Any(f=>f.Element("FieldName")?.Value=="Use Relative Input"&&f.Element("FieldValue")?.Value=="1");
         var players = new List<PlayerControlAudit>();
@@ -99,10 +106,10 @@ public static class GameControlAudit
                         {missing=true;issues.Add(I18n.T("Zieleingang gehört nicht zur physischen Gun dieses Spielers: ")+aim.Function);}
                 foreach(var row in rows.Where(r=>!r.IsAim && r.Function is not null && !r.Function.Contains("Light Gun",StringComparison.OrdinalIgnoreCase)))
                     if(row.Input==I18n.T("Nicht belegt") || row.Input.StartsWith(I18n.T("Nicht belegt /")))
-                    {issues.Add(I18n.T("Aktion nicht belegt: ")+row.Function);if(game.Source=="teknoparrot"||mame is not null||retroRequired.Contains(row.SourceKey))missing=true;else review=true;}
+                    {issues.Add(I18n.T("Aktion nicht belegt: ")+row.Function);if(game.Source=="teknoparrot"||mame is not null||Hod3Controls.Supports(game)||retroRequired.Contains(row.SourceKey))missing=true;else review=true;}
                 foreach(var row in rows.Where(row=>!row.IsAim && !row.Function.Contains("Light Gun",StringComparison.OrdinalIgnoreCase) && !row.Function.Contains("Service",StringComparison.OrdinalIgnoreCase) && !StartupControls.Resolve(row,gun).Resolved))
                 {
-                    if(tekno is not null || mame is not null || retroRequired.Contains(row.SourceKey))missing=true;else review=true;
+                    if(tekno is not null || mame is not null || Hod3Controls.Supports(game) || retroRequired.Contains(row.SourceKey))missing=true;else review=true;
                     issues.Add(I18n.T("Aktion nicht an der Gun erreichbar: ")+row.Function);
                 }
                 if(review && issues.Count==0) issues.Add(I18n.T("Einige Spielaktionen sind keiner physischen Gun-Taste bestätigt zugeordnet."));
@@ -130,6 +137,10 @@ public static class GameControlAudit
                     missing=true;
                     issues.Add(I18n.T("RetroArch empfängt gleiche Tastaturcodes beider Guns gemeinsam. Für getrennte Spieler sind unterschiedliche Tastencodes oder gerätegetrennte Tastatureingänge erforderlich."));
                 }
+                if(controls.Rows.Where(r=>r.Player==gun.Player && r.Function=="Start" && r.Evidence.EndsWith(" · global keyboard"))
+                    .Any(row=>controls.Rows.Any(other=>other.Player!=gun.Player && other.Function=="Start" && other.Evidence.EndsWith(" · global keyboard")
+                        && row.Expression is not null && other.Expression?.Split('|').Last()==row.Expression.Split('|').Last())))
+                {missing=true;issues.Add(I18n.T("Beide Spieler verwenden dieselbe globale Start-Taste. Den Guns unterschiedliche Tastaturcodes zuweisen."));}
             }
             string status = missing || dolphin && required.Length>0 && issues.Count>0 ? "needs-action" : review || dolphin && required.Length==0 ? "needs-review" : "mapping-checked";
             players.Add(new(gun.Player,status,issues.Distinct().ToArray(),hints));

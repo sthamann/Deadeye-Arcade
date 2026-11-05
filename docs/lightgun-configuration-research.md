@@ -36,3 +36,37 @@ cover input mode, tracking and USB power/connection issues. The published
 does not document a software reboot command. Deadeye therefore uses Windows'
 device restart for a freshly resolved, selected Vyper composite USB node. This
 is a user-invoked recovery; the app does not infer a hung gun merely from inactivity.
+
+## Profile preparation and additional game requirements
+
+Library repair and launch now use the same file preparation. Device-index adapters
+still require a local Windows session with actual RawInput enumeration. A repair
+under RDP cannot manufacture that order.
+
+The [DemulShooter author](https://github.com/argonlefou/DemulShooter/wiki/Raw-Thrill)
+documents that Jurassic Park, Aliens Armageddon, Terminator Salvation and Walking
+Dead use TeknoParrot for gun input. DemulShooter serves outputs for these routes;
+adding it cannot repair an absent Start assignment. The same distinction applies
+to [Ghostbusters](https://github.com/argonlefou/DemulShooter/wiki/Arcade-PC-%7C-Ghostbusters).
+Ghostbusters' service setting for the ball mechanism affects custom recoil output.
+It does not establish tracking or button compatibility.
+
+[HOTD III](https://github.com/argonlefou/DemulShooter/wiki/Windows-games#the-house-of-the-dead-iii)
+requires keyboard mode for both players with DemulShooter. The installed
+[ArcadeMod](https://github.com/argonlefou/Hotd3pc_ArcadeMod) stores decimal scan
+codes in `Hod3Arcade.ini`. Deadeye prepares those modes and Start keys, reads back
+the helper assignments and routes Vyper magazine pull to right mouse for this
+fixed-input consumer. Original settings are backed up.
+
+The [Dead Containment developer](https://store.steampowered.com/app/1302230/)
+documents native lightgun support and online co-op. This does not establish two
+independent local guns on one PC. Deadeye does not label online co-op as local.
+
+The RetroArch action lists are based on the actual core consumers:
+[Beetle PSX input](https://github.com/libretro/beetle-psx-libretro/blob/master/input.c),
+[FCEUmm](https://docs.libretro.com/library/fceumm/),
+[Genesis Plus GX](https://github.com/libretro/Genesis-Plus-GX/blob/master/libretro/libretro.c)
+and the previously reviewed Saturn consumer. GunCon uses trigger, reload, A and B;
+Zapper trigger belongs to console port two. Unused profile fields do not prove
+missing game actions. Conversely, these core contracts do not verify every ROM's
+controls, remaps or pointer range in the installed emulator build.

@@ -6,7 +6,7 @@ public static class GameGunProfiles
     // Vyper's magazine uses the pedal channel, which can emit right mouse instead.
     public static bool FixedMouseReload(GameEntry game) =>
         game.Title.Contains("Blue Estate",StringComparison.OrdinalIgnoreCase) && File.Exists(Path.Combine(game.WorkingDirectory,"BlueEstate_Fix.dll"))
-        || MultiplayerSetup.SupportsHouseDead2Remake(game) || MultiplayerSetup.SupportsHouseDeadRemake(game);
+        || MultiplayerSetup.SupportsHouseDead2Remake(game) || MultiplayerSetup.SupportsHouseDeadRemake(game) || Hod3Controls.Supports(game);
     public static GunBinding ForGame(GameEntry game,GunBinding binding)
     {
         if(binding.SystemId!="blamcon" || !FixedMouseReload(game))return binding;

@@ -10,6 +10,9 @@ internal static class ControlMaintenance
         var failures=new Dictionary<string,string>();
         using var raw=new RawInput();raw.Refresh();
         var players=GunConnections.ForConfiguration(library.Bindings,raw.Devices,GunDiscovery.Scan(raw.Devices));
+        if(library.Bindings.Any(b=>b.Player==1) && !players.Any(b=>b.Player==1))
+            return GameControlAudit.Save(games,data,players,raw.Devices,merge:true,
+                preparationErrors:games.ToDictionary(g=>g.Id,_=>"Assigned P1 gun is unavailable. Existing game profiles were retained."));
         string? pack=null;
         if(games.Any(DolphinSetup.IsDolphin) && players.Any(p=>p.Player==1 && DolphinSetup.Supports(p)))
             try {pack=await DolphinAccuracyPackage.Prepare(data,cancellationToken);}
@@ -24,17 +27,17 @@ internal static class ControlMaintenance
             try
             {
                 if(game.Source=="mame")await MameMetadata.Prepare(game,data,cancellationToken);
-                var files=KnownFixes.InputFiles(game,data);var before=KnownFixes.Snapshot(files);
-                if(game.Source=="mame")MameControls.Configure(game,data,players);
-                if(game.Source=="teknoparrot") TeknoGunSetup.Configure(game,players);
-                _=TimeCrisis5Controls.Configure(game,players);
+                string[] Files()=>KnownFixes.InputFiles(game,data).Concat(KnownFixes.MultiplayerFiles(game)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
+                var before=KnownFixes.Snapshot(Files());
+                _=GameInputProfiles.Configure(game,data,players,raw.Devices,raw.MouseOrder,
+                    raw.Devices.ToDictionary(d=>d.Id,d=>InputDeviceNames.Name(d.Id)??(d.Kind=="mouse"?"Mouse":"Keyboard"),StringComparer.OrdinalIgnoreCase));
                 if(pack is not null && DolphinSetup.IsDolphin(game))
                 {
                     // No controller is started during a library audit. The launch
                     // path replaces this port with the running bridge's real port.
                     DolphinSetup.Configure(game,pack,players,DolphinSetup.RequiresBridge(players)?26761:null);
                 }
-                KnownFixes.RecordChanges(game,data,"control-completeness",before,KnownFixes.InputFiles(game,data));
+                KnownFixes.RecordChanges(game,data,"control-completeness",before,Files());
             }
             catch(Exception e) when(e is IOException or UnauthorizedAccessException or ArgumentException or System.Xml.XmlException) {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -43,6 +46,6 @@ internal static class ControlMaintenance
             }
         }
         cancellationToken.ThrowIfCancellationRequested();
-        return GameControlAudit.Save(games,data,library.Bindings,raw.Devices,merge:true,preparationErrors:failures);
+        return GameControlAudit.Save(games,data,players,raw.Devices,merge:true,preparationErrors:failures);
     }
 }

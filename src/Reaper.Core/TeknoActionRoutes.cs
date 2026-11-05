@@ -23,6 +23,8 @@ public static class TeknoActionRoutes
         rows.Add(new("InfinityBlade","TOUCH 1","P1Button1","trigger","TeknoParrot installed InfinityBlade vendor template"));
         rows.Add(new("LuigisMansion","Select Switch","P1Button4","side","TeknoParrot installed LuigisMansion vendor template"));
         Both("WartranTroopers","Weapon Change","Button2","magazine","https://github.com/argonlefou/DemulShooter/wiki/Arcade-PC-%7C-Mars-Sortie");
+        Both("WartranTroopers","Shoulder","Button3","magazine","TeknoParrot installed WartranTroopers vendor template");
+        Both("WartranTroopers","Sense","Button4","down","TeknoParrot installed WartranTroopers vendor template");
         Both("WartranTroopers","Throw","Button1","trigger","TeknoParrot installed Gashaaaan vendor template");
         rows.Add(new("WartranTroopers","Enter","P1Button5","start","TeknoParrot installed RaccoonRampage vendor template"));
         rows.Add(new("RawThrillsGUN","Toggle Cursor","P1ButtonRight","right","TeknoParrot installed AliensArmageddon vendor template"));

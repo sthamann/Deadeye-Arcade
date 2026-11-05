@@ -88,6 +88,11 @@ public static class Rpcs3Setup
             for (int i = 0; i < controls.Length; i++)
             {
                 string? token = hardware.FirstOrDefault(h => h.Id == controls[i])?.Token;
+                // Vyper's selector is normally reserved for recoil and has no
+                // click. Cross is still needed by Move games, so use D-pad Down
+                // when that physical click is absent, without duplicating A/B.
+                if (controls[i] == "stick" && token is null)
+                    token = hardware.FirstOrDefault(h => h.Id == "down")?.Token;
                 buttons["Button " + (i + 1)] = JsonSerializer.Serialize(token is null ? "" : RawToken(token));
             }
             MergeYaml(Path.Combine(InputRoot(game), "raw_mouse.yml"), ["Player " + p], buttons);

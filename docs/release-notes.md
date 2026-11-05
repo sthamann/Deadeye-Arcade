@@ -1,8 +1,10 @@
-Find local multiplayer games and reconnect a stalled Vyper from Gun Studio.
+Prepare supported game controls consistently during library repair and launch.
 
-- Display player modes below library entries and in game details: local co-op, local versus, taking turns, online and linked cabinets. Filter for local multiplayer and open manufacturer/store sources for the exact game edition.
-- Include an initial catalog of 43 documented editions. Unknown entries are visibly unverified; imported notes cannot silently become official player metadata.
-- Reconnect only the selected present Vyper USB device, then refresh RawInput registration and discovery. Windows requests administrator permission. Calibration and saved mappings are retained; hubs and wildcard resets are excluded.
-- Export structured player metadata with `--export-player-support` for diagnostics.
+- Library repair and game launch share the same profile preparation for TeknoParrot, MAME, RetroArch, RPCS3, Supermodel, Flycast, Time Crisis 5 and installed multiplayer helpers. Device discovery is refreshed before configuration. A missing selected P1 leaves the existing assignments intact.
+- Configure the installed HOTD III ArcadeMod for DemulShooter keyboard mode and actual Start scan codes. Read back trigger, reload, path selection and Start. Vyper magazine pull temporarily uses the fixed mouse reload input and restores the saved menu configuration afterward.
+- Keep Vyper Cross reachable in RPCS3 when the recoil selector has no button assignment, using D-pad Down as a separate default.
+- Audit the PS1 GunCon, NES Zapper, Saturn and Genesis inputs consumed by their specific cores. Unused buttons no longer produce invented mapping failures. NES menu controls stay with physical P1 even though the Zapper occupies console port two.
+- Map Wartran Troopers Shoulder and Sense separately from Option for all supported gun families. Distinguish specific cabinet service-menu Enter controls from real game confirmation actions.
+- Expand the sourced multiplayer catalog to 47 editions. Separate Overkill's two-player story from its four-player minigames, Link's alternating turns and Sin and Punishment's assisting second player.
 
-Game player counts, generated control profiles and physical two-gun gameplay are separate verification steps. The Vyper idle failure still requires a reproduced long-idle test; a successful restart does not prove its root cause is fixed.
+Profile coverage and synthetic routing checks do not mark a game as gameplay verified. Unsupported title actions, content overrides and physical tracking remain explicit review items.

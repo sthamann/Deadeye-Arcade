@@ -7,12 +7,22 @@ public static class RetroArchSetup
     public static bool IsRetroArch(GameEntry game) => Path.GetFileName(game.Executable).Contains("retroarch", StringComparison.OrdinalIgnoreCase);
     public static string ProfilePath(GameEntry game, string data) => Path.Combine(data, "input-profiles", Regex.Replace(game.Id, "[^a-zA-Z0-9_-]", "_") + ".cfg");
 
-    // Beetle Saturn's Stunner/Virtua Gun consumer reads only these buttons.
-    // Other cores retain their existing, unreviewed action lists.
-    public static string[] LightgunActions(GameEntry game) => IsRetroArch(game)
-        && game.Arguments.Where((a,i)=>i>0 && game.Arguments[i-1]=="-L")
-            .Any(a=>Path.GetFileName(a.Replace('\\','/')).Equals("mednafen_saturn_libretro.dll",StringComparison.OrdinalIgnoreCase))
-        ? ["gun_trigger","gun_reload","gun_start"] : [];
+    // Only inputs consumed by the selected core's lightgun implementation.
+    // This is an emulator contract, not confirmation of every game's actions
+    // or its content overrides. Sources are recorded in the configuration guide.
+    public static string[] LightgunActions(GameEntry game)
+    {
+        if (!IsRetroArch(game)) return [];
+        string? core = game.Arguments.Where((a,i)=>i>0 && game.Arguments[i-1]=="-L")
+            .Select(a=>Path.GetFileName(a.Replace('\\','/')).ToLowerInvariant()).SingleOrDefault();
+        return core switch {
+            "mednafen_saturn_libretro.dll" => ["gun_trigger","gun_reload","gun_start"],
+            "mednafen_psx_libretro.dll" or "mednafen_psx_hw_libretro.dll" => ["gun_trigger","gun_reload","gun_aux_a","gun_aux_b"],
+            "fceumm_libretro.dll" => ["gun_trigger"],
+            "genesis_plus_gx_libretro.dll" => ["gun_trigger","gun_aux_a","gun_aux_b","gun_start"],
+            _ => []
+        };
+    }
 
     // WinRaw in the installed 1.14/1.19 builds uses the original OS enumeration,
     // zero based, including the RDP mouse and unnamed devices.
@@ -78,6 +88,7 @@ public static class RetroArchSetup
             var hardware = StartupControls.GameHardware(binding);
             Bind("gun_aux_a", hardware.FirstOrDefault(c => c.Id == "magazine")?.Token);
             Bind("gun_aux_b", hardware.FirstOrDefault(c => c.Id == "side")?.Token);
+            Bind("a", Token("shoot")); Bind("b", Token("reload"));
             foreach (string direction in new[] { "up", "down", "left", "right" }) { var token = hardware.FirstOrDefault(c => c.Id == direction)?.Token; Bind("gun_dpad_" + direction, token); Bind(direction, token); }
         }
         string path = ProfilePath(game, data); Directory.CreateDirectory(Path.GetDirectoryName(path)!);

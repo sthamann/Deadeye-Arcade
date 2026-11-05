@@ -41,6 +41,7 @@ public static class OverlayControls
         try
         {
             if (TimeCrisis5Controls.Supports(game)) return TimeCrisis5Controls.Read(game, bindings);
+            if (Hod3Controls.Supports(game)) return Hod3Controls.Read(game, bindings);
             if (MultiplayerSetup.SupportsHouseDeadRemake(game)) return MultiplayerSetup.ReadHouseDeadRemake(game, bindings);
             if (MultiplayerSetup.SupportsHouseDead2Remake(game)) return MultiplayerSetup.ReadCompactGunAssignments(MultiplayerSetup.HouseDead2RemakeConfigPath(), bindings);
             if (Rpcs3Setup.IsRpcs3(game)) return Rpcs3Setup.Read(game, bindings);
@@ -128,8 +129,12 @@ public static class OverlayControls
                     // Controller/axis numbers have no confirmed physical gun identity.
                     int port = int.Parse(match.Groups[1].Value);
                     if(values.GetValueOrDefault("input_libretro_device_p"+port)=="0") continue;
-                    if(coreActions.Length>0 && values.GetValueOrDefault("input_libretro_device_p"+port) is "260" or "516"
-                        && !coreActions.Contains(match.Groups[2].Value)) continue;
+                    if(coreActions.Length>0)
+                    {
+                        bool pad=values.GetValueOrDefault("input_libretro_device_p"+port)=="1";
+                        if(pad ? match.Groups[2].Value is not ("a" or "b" or "start" or "select")
+                            : !coreActions.Contains(match.Groups[2].Value)) continue;
+                    }
                     int player = int.TryParse(values.GetValueOrDefault("deadeye_player" + port + "_physical"), out int physical) ? physical : port;
                     if(player is not (1 or 2)) continue;
                     string? token = match.Groups[3].Value switch { "" => StartupControls.KeyToken(pair.Value), "mbtn" when Regex.IsMatch(pair.Value, "^[1-5]$") => "mouse:" + pair.Value, _ => null };
@@ -138,7 +143,7 @@ public static class OverlayControls
                 // Deleting a whole required entry must not hide it from the audit.
                 for(int port=1;coreActions.Length>0 && port<=4;port++)
                 {
-                    if(values.GetValueOrDefault("input_libretro_device_p"+port) is not ("260" or "516"))continue;
+                    if(values.GetValueOrDefault("input_libretro_device_p"+port) is null or "0" or "1")continue;
                     int player=int.TryParse(values.GetValueOrDefault("deadeye_player"+port+"_physical"),out int physical)?physical:port;
                     if(player is not (1 or 2))continue;
                     foreach(string action in coreActions.Where(a=>!rows.Any(r=>r.Player==player && r.SourceKey==a)))

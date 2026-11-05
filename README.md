@@ -154,6 +154,9 @@ startup reference shows the resulting profile and any unresolved controls.
 | --- | --- |
 | Changed game or emulator locations | Repairs supported unambiguous paths and retains profile backups. |
 | Selected P1/P2 guns | Writes supported device and action routes for the chosen pair, including supported mixed models. |
+| Library repair and launch | Share the same profile preparation, including installed multiplayer helpers. An unavailable selected P1 leaves existing assignments intact. |
+| HOTD III ArcadeMod input | Sets both players to the required keyboard mode, writes their actual Start scan codes and reads back trigger, reload and path selection. Temporarily routes Vyper magazine pull to the helper's fixed reload input. |
+| Vyper in RPCS3 | Keeps Move Cross reachable on D-pad Down when the recoil selector has no click assignment. |
 | Supported Wii titles | Applies matching disc-region accuracy profiles and independent input bridge channels. |
 | Recognized multiplayer extensions | Configures matching installed integrations, including supported Blue Estate and HOTD 2: Remake paths. |
 | Missing runtimes or support files | Inspects known dependencies and prepares matching reviewed official packages. Microsoft installers are checked for architecture and signature. |
@@ -162,6 +165,7 @@ startup reference shows the resulting profile and any unresolved controls.
 | Old HOTD 4 Special loader | Uses the matching installed ElfLdr2 vendor template while preserving saved controls and settings. |
 | Reviewed classic HOTD III fullscreen hang | Backs up the mod configuration, replaces the affected executable's exclusive fullscreen mode with windowed rendering and fills the monitor through borderless presentation. |
 | Beetle Saturn lightgun warnings | Reads Trigger, Reload and Start from the active gun ports, ignores unused generic buttons and still flags missing required actions or real shared-key conflicts. |
+| GunCon and Zapper warnings | Reads the selected core's actual inputs instead of requiring unused C, Start or D-pad buttons. NES menu control and its port-two Zapper remain assigned to physical P1. |
 | Duplicate starts and lingering processes | Reserves a single session and supervises the owned game and helper processes. |
 
 Open **Settings → Automatic repairs** for findings, completed changes and next

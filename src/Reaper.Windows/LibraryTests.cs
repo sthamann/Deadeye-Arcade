@@ -33,7 +33,10 @@ internal static class LibraryTests
         using var emergency = new EmergencyExit(() => { try { stop.Set(); } catch (ObjectDisposedException) { } }, bindings: library.Bindings);
         string report = Path.Combine(data, "library-test.json");
         var previouslyAttempted=resume?Attempted(report):[];
-        var games = library.Games.OrderBy(g=>previouslyAttempted.Contains(g.Id)?1:0).ThenBy(g => g.Title, StringComparer.OrdinalIgnoreCase).ToArray();
+        var preferred=(library.Settings.PreferredGameIds??[]).ToHashSet(StringComparer.Ordinal);
+        var games = library.Games.OrderBy(g=>previouslyAttempted.Contains(g.Id)?1:0)
+            .ThenBy(g=>preferred.Contains(g.Id)?0:1).ThenByDescending(g=>g.Priority)
+            .ThenByDescending(g=>g.ReleaseYear??0).ThenBy(g => g.Title, StringComparer.OrdinalIgnoreCase).ToArray();
         var results = new List<object>();
         bool cancelled = false, needsAttention = false;GameBlockingDialog? blockingDialog=null;
         void Save(string status, GameEntry? current = null) => Atomic(report, JsonSerializer.Serialize(new {
