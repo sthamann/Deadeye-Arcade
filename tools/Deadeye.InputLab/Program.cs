@@ -111,14 +111,21 @@ internal static partial class Program
             output = Path.GetFullPath(Option(args,"--output") ?? Path.Combine(data,"input-lab",DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")));
             var library = new LibraryStore(data).Load();
             var game = library.Games.Single(g=>g.Id==args[1]);
+            bool blueEstate=Path.GetFileName(game.Executable).Equals("BEGame.exe",StringComparison.OrdinalIgnoreCase)
+                && File.Exists(Path.Combine(game.WorkingDirectory,"BlueEstate_Fix.dll"));
             if(args[0]=="plan")
             {
                 Console.WriteLine(JsonSerializer.Serialize(new { game.Id,game.Title,
-                    backend=game.Source=="teknoparrot"?"virtual-absolute-hid":SupportsDolphinReplay(game)?"isolated-dolphin-dsu":SupportsMameReplay(game)?"isolated-mame-rawinput":"not-yet-supported",
+                    backend=blueEstate?"physical-usb-guns-required":game.Source=="teknoparrot"?"virtual-absolute-hid":SupportsDolphinReplay(game)?"isolated-dolphin-dsu":SupportsMameReplay(game)?"isolated-mame-rawinput":"not-yet-supported",
                     controls=OverlayControls.Read(game,data,library.Bindings),
                     note="A plan reads configuration only. It does not install a driver or verify gameplay." },json));
                 return 0;
             }
+            // HIDMaestro currently enumerates HIDCLASS paths without VID/PID. The
+            // reviewed Blue Estate patch needs a VID/PID pair for each gun.
+            // Refuse before creating test devices or writing empty assignments.
+            if(blueEstate)
+                throw new NotSupportedException("Blue Estate's installed patch requires physical USB gun VID/PID identities. These virtual HIDCLASS devices cannot verify its two-player inputs. No game configuration was changed.");
             bool dolphin=DolphinSetup.IsDolphin(game);
             if(dolphin)
             {

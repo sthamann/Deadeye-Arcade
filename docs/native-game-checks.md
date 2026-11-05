@@ -1,6 +1,6 @@
 # Native game checks
 
-These observations were made on a physical Windows 11 console on 1–2 November
+These observations were made on a physical Windows 11 console on 1–5 November
 2026. Remote Desktop was disconnected while games ran. They are bounded checks,
 not complete playthroughs or a certification of every physical gun model.
 
@@ -20,7 +20,7 @@ ratings when selected. A high rating does not establish lightgun compatibility.
 | Railbreak | Native start, rendered menu, menu/resume focus and owned process cleanup passed. | Actual shooting, reload and independent two-gun gameplay. |
 | Dead Containment | Installed demo starts, renders its menu, resumes after the Deadeye menu and closes cleanly. | Full game and actual gun actions. Online co-op is not local two-gun verification. |
 | The House of the Dead 2: Remake | Native start, rendered menu, menu/resume focus and cleanup passed. | Actual gun actions and independent P2 gameplay. |
-| Blue Estate | Native start, rendered menu, menu/resume focus and cleanup passed. | Actual gun actions and fullscreen behavior with a matching multiplayer patch. The staged multiplayer files were not active, so two-player support was not accepted. |
+| Blue Estate | Matching 32-bit multiplayer patch installed. Its native F5 menu visibly reports Enabled, Shoot For Gesture and distinct physical gun assignments. A 60-second native launch and cleanup passed with the patch active. | Independent physical P1/P2 aim, shots, reload, gestures and sustained gameplay. Virtual HID delivery did not move the game cursor or activate Story; this is not a two-player pass. Menu/resume was tested before patch installation and needs rechecking with the patch active. |
 | Mad Bullets | Native start with Steam running, rendered menu, menu/resume focus and cleanup passed. | Shooting and reload in gameplay. |
 | DEAD RELAY: Relay Mart | Native start, rendered menu, menu/resume focus and cleanup passed. | Actual gun actions and sustained play. |
 | Blood Storm: Alien Purge | Native start, foreground/menu-resume and cleanup passed. | Actual gun actions and a fresh visual review using the corrected capture backend. |
@@ -235,3 +235,32 @@ Reviewed Terminator 2 Bomb frames again show independent effects: P1 changes fro
 ## Shadows Rising renderer handoff
 
 The installed follow-up passed two minutes with the native game menu and resume enabled. The session followed Transformers2.exe and its TF2_Gun renderer, retained actual foreground focus and completed cleanup. Previously it had followed the separate GameShell bootstrap. Independent gun gameplay is still a separate acceptance step.
+
+## Blue Estate patch and simulator boundary
+
+The reviewed patch requires the 32-bit game, Raw Mode in both player control
+settings and fullscreen rendering. Both physical guns must be connected before
+launch and have distinct VID/PID identities. The native F5 patch menu provides
+an independent readback of the assignments. Shoot For Gesture was enabled;
+its complete P2 behavior remains subject to a physical gameplay check.
+
+The matching patch DLL SHA-256 is
+`4D1BA2A14A60B6198F7AA4D0C30C99BD8D25A0E2A921F2E7DA0F9B743CE1F42A`.
+Installation preserved the game executable and retained backups of modified
+configuration files. No third-party binaries are distributed in this repository.
+
+A native-console simulator experiment delivered ten isolated absolute aim
+positions and a P1 click to Windows, but the game cursor remained at the upper
+left and Story did not open. The patch menu showed empty virtual assignments.
+The current HIDMaestro devices enumerate as HIDCLASS paths without VID/PID;
+Deadeye's VID/PID extraction therefore produced empty assignments. The original
+physical gun settings and library were restored, with no cleanup issues reported.
+A later scene-gated experiment refused navigation when it could not identify the
+main menu and also restored the original settings.
+
+Input Lab now identifies this installed patch as requiring physical USB guns
+and refuses its virtual replay before creating devices or changing any game
+configuration. Packet delivery must not become an input acceptance result.
+The patch's supplied instructions also warn against losing focus or reconnecting
+guns during play. The patched game's Deadeye menu/resume path remains unaccepted
+until tested separately.
