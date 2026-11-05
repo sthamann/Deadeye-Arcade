@@ -157,6 +157,7 @@ startup reference shows the resulting profile and any unresolved controls.
 | Selected P1/P2 guns | Writes supported device and action routes for the chosen pair, including supported mixed models. |
 | Library repair and launch | Share the same profile preparation, including installed multiplayer helpers. An unavailable selected P1 leaves existing assignments intact. |
 | Alien3 start input | Combines each gun’s Shoot and Start actions into the game’s real trigger input. The legend shows Shoot / Start and omits unused dedicated Start ports. |
+| Transformers: Shadows Rising stays behind its launcher | Tracks the owned `Sega/Transformers2/Transformers2.exe` renderer instead of `Sega/shell/Shell.exe`. Window readiness, startup guide, menu return and natural exit use the actual game. The exact vendor profile and directory layout are required. |
 | Hidden GameInput window takes focus | Returns to the visible game only from the exact untitled, invisible Windows service window. Visible apps, prompts and the game menu are preserved. Native tests still require actual game focus. |
 | HOTD III ArcadeMod input | Sets both players to the required keyboard mode, writes their actual Start scan codes and reads back trigger, reload and path selection. Temporarily routes Vyper magazine pull to the helper's fixed reload input. |
 | Vyper in RPCS3 | Keeps Move Cross reachable on D-pad Down when the recoil selector has no click assignment. |

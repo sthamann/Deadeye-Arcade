@@ -2,6 +2,17 @@ namespace Reaper.Core;
 
 public static class GameRuntimeWindows
 {
+    // Shadows Rising launches through Sega/shell/Shell.exe. That visible
+    // GameShell window is not the renderer. Track the exact sibling runtime
+    // for window readiness, overlay restoration and natural game exit.
+    public static string TeknoTarget(string emulationProfile,string configuredPath)
+    {
+        if(!emulationProfile.Equals("TransformersShadowsRising",StringComparison.OrdinalIgnoreCase))return configuredPath;
+        string path=configuredPath.Replace('\\','/');
+        const string suffix="/shell/Shell.exe";
+        return path.EndsWith(suffix,StringComparison.OrdinalIgnoreCase)
+            ?Path.Combine(path[..^suffix.Length].Replace('/',Path.DirectorySeparatorChar),"Transformers2","Transformers2.exe"):configuredPath;
+    }
     // Observed on the local console: an untitled, invisible service HWND can
     // take foreground after a game was already activated. This is not a UI
     // the user selected. Never generalize recovery to visible apps or prompts.

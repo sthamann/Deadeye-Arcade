@@ -274,7 +274,14 @@ public sealed class GameSession
         {
             var doc = XDocument.Load(game.SourcePath);
             string? path = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "GamePath")?.Value;
-            if (!string.IsNullOrWhiteSpace(path)) target = Path.GetFullPath(path, game.WorkingDirectory);
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                target = Path.GetFullPath(path, game.WorkingDirectory);
+                string profile=doc.Descendants().FirstOrDefault(e=>e.Name.LocalName=="EmulationProfile")?.Value??"";
+                string runtime=GameRuntimeWindows.TeknoTarget(profile,target);
+                if(!File.Exists(runtime))throw new IOException(I18n.T("Spielprogramm fehlt: ")+runtime);
+                target=runtime;
+            }
         }
         HashSet<int> existing = Snapshot().Select(p => p.Id).ToHashSet();
         targetExecutable = target;
