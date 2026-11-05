@@ -62,6 +62,18 @@ internal static class NativeGameWindows
         }
         catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) {return false;}
     }
+    public static bool RestoreOwnedConsoleFocus(nint renderer)
+    {
+        nint foreground=GetForegroundWindow();
+        if(renderer==0||foreground==0||foreground==renderer||!IsWindowVisible(renderer)||IsIconic(renderer)||!IsWindowVisible(foreground))return false;
+        var rendererClass=new StringBuilder(128);GetClassNameW(renderer,rendererClass,rendererClass.Capacity);
+        var foregroundClass=new StringBuilder(128);GetClassNameW(foreground,foregroundClass,foregroundClass.Capacity);
+        GetWindowThreadProcessId(renderer,out uint rendererOwner);GetWindowThreadProcessId(foreground,out uint foregroundOwner);
+        if(!GameRuntimeWindows.OwnedLoaderConsole(rendererClass.ToString(),rendererOwner,foregroundClass.ToString(),foregroundOwner))return false;
+        // Keep the console intact for diagnosis. Return only from this exact
+        // renderer process's console, never an unrelated terminal or dialog.
+        return GetForegroundWindow()==foreground && SetForegroundWindow(renderer) && GetForegroundWindow()==renderer;
+    }
     public static bool LauncherStatus(int processId,nint window)
     {
         if(window==0||!IsWindowVisible(window)||IsIconic(window))return false;

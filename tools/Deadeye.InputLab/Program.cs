@@ -85,6 +85,8 @@ internal static partial class Program
                     ||SupportsMameReplay(mame with {Arguments=["unreviewed"]})
                     ||!Within(Path.Combine("sample","cfg","child"),Path.Combine("sample","cfg"))
                     ||Within(Path.Combine("sample","cfg-other"),Path.Combine("sample","cfg")))throw new IOException("MAME replay scope regression failed.");
+                if(!MameGameplayReplay("Shoot / Start") || !MameGameplayReplay("Bomb") || MameGameplayReplay("Start") || MameGameplayReplay("Coin"))
+                    throw new IOException("MAME combined fire/start replay regression failed.");
                 if(!DolphinCreateSaveText("Save game data not found. Create data?","RBUE08")
                     ||DolphinCreateSaveText("Delete existing save data?","RBUE08")
                     ||!DolphinCreateSaveText("Save game data not found. Create data?","SBDE08")
@@ -95,7 +97,7 @@ internal static partial class Program
                     ||SceneSignals("NOW LOADING Press the START button FREE PLAY",requireStart:true).Ready
                     ||!SceneSignals("Press the START button FREE PLAY",requireStart:true).Ready)
                     throw new IOException("Silent Hill boot scene checks failed.");
-                Console.WriteLine("Scene signal checks passed (22 cases); MAME replay scope checks passed (five cases); Dolphin save prompt checks passed (five cases).");return 0;
+                Console.WriteLine("Scene signal checks passed (22 cases); MAME replay scope checks passed (five cases); MAME action selection checks passed (four cases); Dolphin save prompt checks passed (five cases).");return 0;
             }
             if(args.Length < 2 || args[0] is not ("plan" or "run"))
                 throw new ArgumentException("Usage: Deadeye.InputLab plan|run GAME_ID [--data DIR] [--output DIR] [--install-driver] [--input-route-probe] [--windowed-probe] [--hold-ms 50..2000]; capture --output DIR; read-scene IMAGE");

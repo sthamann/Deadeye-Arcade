@@ -190,5 +190,13 @@
     "scope": "Visible owned game renderer while the current foreground window is invisible, untitled, exactly GameInputServiceWindow and belongs to GameInputSvc or GameInputRedistService; no overlay or session shutdown",
     "source": "https://github.com/sthamann/Deadeye-Arcade",
     "verification": "Observed foreground failures for Big Buck, HOTD EX and Silent Hill while the renderer remained responsive. Restore foreground only from the exact hidden service surface. Count only verified activation of the actual renderer, retain real focus requirements in native tests and record recovery count. Services, registry and security settings remain unchanged."
+  },
+  {
+    "id": "owned-loader-console-focus",
+    "name": "Owned arcade loader console focus",
+    "mode": "launch-time",
+    "scope": "Active TeknoParrot session, visible FREEGLUT renderer and foreground classic ConsoleWindowClass belonging to that exact same nonzero process ID; no overlay or shutdown",
+    "source": "https://github.com/sthamann/Deadeye-Arcade",
+    "verification": "Observed Big Buck native batch failure with its own BudgieLoader classic console ahead of its responsive FREEGLUT renderer. Restore only that owned renderer, recheck the foreground before acting and count actual successful activation. Preserve the console, other applications and modal dialogs. Native tests continue to require stable actual game focus."
   }
 ]

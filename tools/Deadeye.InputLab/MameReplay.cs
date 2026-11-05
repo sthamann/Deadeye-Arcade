@@ -120,7 +120,9 @@ internal static partial class Program
                 }
                 await Sweep(session,devices[player.Player-1],player);
             }
-            foreach(var action in actions.Where(a=>!Regex.IsMatch(a.Function,"coin|start",RegexOptions.IgnoreCase)))await DolphinAction(session,devices,players,action,"mame");
+            // A combined Shoot / Start label is still a gameplay fire action.
+            // Exclude only standalone credit/start rows, not substrings.
+            foreach(var action in actions.Where(a=>MameGameplayReplay(a.Function)))await DolphinAction(session,devices,players,action,"mame");
         }
         finally
         {
@@ -138,6 +140,7 @@ internal static partial class Program
             }
         }
     }
+    private static bool MameGameplayReplay(string function)=>!Regex.IsMatch(function,@"^(?:coin|start)$",RegexOptions.IgnoreCase);
 
     private static bool Within(string path,string directory) => Path.GetFullPath(path).Equals(Path.GetFullPath(directory),StringComparison.OrdinalIgnoreCase)
         ||Path.GetFullPath(path).StartsWith(Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory))+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase);

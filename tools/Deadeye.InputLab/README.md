@@ -198,3 +198,5 @@ both vendor fields and original assignments are restored afterward.
 
 Startup-only capture failures can be retried inside the existing bounded scene
 wait on the Default desktop. A retry never establishes readiness or gameplay.
+
+Alien3’s combined Shoot / Start action remains part of weapon replay after the startup sequence. Only standalone Coin and Start rows are excluded there; a display label containing Start must not suppress its fire test.

@@ -20,6 +20,7 @@ public sealed class GameSession
     private nint job;
     private nint gameWindow;
     public int HiddenServiceFocusRecoveries { get; private set; }
+    public int OwnedConsoleFocusRecoveries { get; private set; }
     private DolphinGunBridge? bridge;
     public void ResetInput() => bridge?.ResetInput();
     public object? InputDiagnostics() => bridge?.Snapshot();
@@ -175,7 +176,7 @@ public sealed class GameSession
     public async Task Run(GameEntry game, string dataDirectory, IEnumerable<GunBinding> bindings, CancellationToken cancellationToken = default, bool fixesPrepared = false)
     {
         if (Interlocked.CompareExchange(ref reserved,1,0)!=0) throw new InvalidOperationException(I18n.T("Es läuft bereits ein Spiel."));
-        CleanupIssues.Clear(); HiddenServiceFocusRecoveries=0;
+        CleanupIssues.Clear(); HiddenServiceFocusRecoveries=0; OwnedConsoleFocusRecoveries=0;
         var helpers = new List<Process>();
         var helperJobs = new List<nint>();
         GameInputPreparation? input = null;
@@ -389,6 +390,8 @@ public sealed class GameSession
                         } catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
                     if(!overlayVisible && ending is null && GameWindowAvailable && NativeGameWindows.RestoreHiddenGameInputFocus(gameWindow))
                         HiddenServiceFocusRecoveries++;
+                    if(game.Source=="teknoparrot" && !overlayVisible && ending is null && GameWindowAvailable && NativeGameWindows.RestoreOwnedConsoleFocus(gameWindow))
+                        OwnedConsoleFocusRecoveries++;
                     if (children > 0) lastChild = DateTime.Now;
                     if (targetSeen && liveTarget == 0 && (game.Source == "teknoparrot" || children == 0)) break;
                     if (descendantSeen && children == 0 && DateTime.Now - lastChild > TimeSpan.FromSeconds(3)) break;

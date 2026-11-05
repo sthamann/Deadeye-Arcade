@@ -1,7 +1,6 @@
-Restore game input after hidden Windows service focus loss and make Alien3 Start work through the actual cabinet input.
+Keep an arcade loader’s console from interrupting its active renderer and retain combined Shoot / Start actions in input replay.
 
-- Recover the active game renderer from the exact invisible, untitled GameInput service window observed taking focus during several arcade launches. Preserve visible applications, real prompts and the in-game menu. Record successful recoveries and retain the native test’s actual focus requirement. No Windows service or security setting is disabled.
-- Map the selected player’s Shoot and Start actions to Alien3’s actual trigger input. The original cabinet starts with the trigger after inserting credits; the MAME driver has no dedicated gameplay Start ports. Show Shoot / Start in the guide and keep coin, bomb and both aim axes independent.
-- Add manufacturer manual sources for two-player Alien3, Terminator 2 and the Model 2 edition of Virtua Cop. Player metadata describes the original game edition, independently of emulator and physical input verification.
+- Restore game focus from a classic console only when the console and the visible FREEGLUT renderer belong to the exact same process in an active TeknoParrot session. Keep the console available for diagnosis, preserve other applications and dialogs, and record verified recoveries.
+- Keep Alien3’s combined Shoot / Start action in the MAME gameplay replay. Standalone Coin and Start rows stay in the startup sequence; a combined fire action is no longer skipped because its label contains Start.
 
-Native launch checks, readable profile routing and physical multiplayer gameplay remain separate verification levels.
+Native tests still require actual stable game focus. Received HID packets and readable mappings remain separate from visual gameplay and physical lightgun acceptance.

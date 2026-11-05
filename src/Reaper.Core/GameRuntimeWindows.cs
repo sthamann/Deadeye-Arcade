@@ -8,6 +8,8 @@ public static class GameRuntimeWindows
     public static bool HiddenGameInput(string windowClass,string processName,bool visible,string title)=>!visible && title.Length==0
         && windowClass=="GameInputServiceWindow"
         && new[]{"GameInputSvc","GameInputRedistService"}.Contains(processName,StringComparer.OrdinalIgnoreCase);
+    public static bool OwnedLoaderConsole(string rendererClass,uint rendererOwner,string foregroundClass,uint foregroundOwner)=>rendererOwner!=0
+        && rendererOwner==foregroundOwner && rendererClass=="FREEGLUT" && foregroundClass=="ConsoleWindowClass";
     // Modern Windows security and device prompts are not always #32770 dialogs.
     // These hosts cannot be a game renderer. Preserve the prompt and stop the
     // unattended batch instead of recording every following game as broken.

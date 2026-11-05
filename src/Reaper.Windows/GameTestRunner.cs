@@ -142,7 +142,7 @@ internal static class GameTestRunner
             startupSeconds = observation.FirstReadyAt / 1000.0,
             phase = preparationTimedOut?"preparation-timeout":blockingDialog is null?observation.State:"blocked-dialog", cancelled, blockingDialog, blockingDialogAfterExit,
             exitedEarly = observation.State == "exited-early", windowObserved = observation.FirstReadyAt is not null,
-            gameWindowAvailable = available, foreground, foregroundStableSeconds, hiddenServiceFocusRecoveries=session.HiddenServiceFocusRecoveries, rendererResponse, inputBridge, error, failure, codeIntegrity, processDetails = details,
+            gameWindowAvailable = available, foreground, foregroundStableSeconds, hiddenServiceFocusRecoveries=session.HiddenServiceFocusRecoveries, ownedConsoleFocusRecoveries=session.OwnedConsoleFocusRecoveries, rendererResponse, inputBridge, error, failure, codeIntegrity, processDetails = details,
             processesBeforeExit = before, processesAfterExit = after, ended = !session.Active && after.Length == 0,
             controls, controlAudit = audit, controlSimulation = simulation, cleanupIssues = session.CleanupIssues,
             playerControls = state.Bindings.Select(binding => new { binding.Player, binding.SystemId, hints = StartupControls.ForPlayer(controls, binding) }),
