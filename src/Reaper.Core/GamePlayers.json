@@ -835,5 +835,39 @@
       "checkedAt": "2026-11-05",
       "note": null
     }
+  },
+  {
+    "titles": [
+      "Lost Land Adventure"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "LostLand",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.bmigaming.com/Games/Manuals/namco/lost-land-adventure-arcade-video-game-service-manual-namco-bandai.pdf"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "Two players can join the same game with credits and Start. The shared PIN pad is optional for saving and resuming progress; see printed manual pages 38-44."
+    }
+  },
+  {
+    "titles": [
+      "Raccoon Rampage"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "RaccoonRampage",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 4,
+      "sources": [
+        "https://www.unistechnology.com.hk/products/raccoon-rampage/"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "The four-player arcade edition supports cooperative play. Deadeye currently prepares the selected P1/P2 pair; this metadata does not enable four local gun assignments."
+    }
   }
 ]

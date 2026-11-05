@@ -42,6 +42,17 @@ internal static class NativeGameWindows
         },0);
         return string.Join("\n",lines.Distinct());
     }
+    public static bool VisiblePrompt(nint window) => window!=0 && IsWindowVisible(window) && !IsIconic(window);
+    public static bool LauncherStatus(int processId,nint window)
+    {
+        if(window==0||!IsWindowVisible(window)||IsIconic(window))return false;
+        GetWindowThreadProcessId(window,out uint owner);
+        if(owner!=(uint)processId)return false;
+        var name=new StringBuilder(128);GetClassNameW(window,name,name.Capacity);
+        if(name.ToString()=="#32770")return false;
+        var title=new StringBuilder(256);GetWindowTextW(window,title,title.Capacity);
+        return title.ToString().Equals("Game Running",StringComparison.OrdinalIgnoreCase);
+    }
     public static nint DolphinRenderer(int processId,nint current)
     {
         var windows=new List<nint>();

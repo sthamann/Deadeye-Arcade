@@ -167,6 +167,8 @@ startup reference shows the resulting profile and any unresolved controls.
 | Beetle Saturn lightgun warnings | Reads Trigger, Reload and Start from the active gun ports, ignores unused generic buttons and still flags missing required actions or real shared-key conflicts. |
 | GunCon and Zapper warnings | Reads the selected core's actual inputs instead of requiring unused C, Start or D-pad buttons. NES menu control and its port-two Zapper remain assigned to physical P1. |
 | Pump, Super Scope and 3DO controls | Routes Ranger Mission and Extreme Hunting 2 Pump separately from offscreen reload; shows the configured core's Cursor, Turbo, Pause and Option controls. |
+| Game loader console takes focus in Windows Terminal | Uses a recent native failure to identify an owned BudgieLoader console. Selects Windows Console Host for new consoles for the current Windows user, saves the original preference and preserves a later user change. |
+| Late TeknoParrot status window | Returns focus from this session’s exact non-modal Game Running status window to the existing renderer. Other applications and error dialogs stay visible. |
 | Duplicate starts and lingering processes | Reserves a single session and supervises the owned game and helper processes. |
 
 Open **Settings → Automatic repairs** for findings, completed changes and next

@@ -84,3 +84,15 @@ reads trigger, cursor, turbo and pause. The configured
 reads trigger, reload and option. These consumers are distinct from the cores'
 Justifier and arcade 3DO device modes. Their labels now follow the configured
 consumer instead of demanding buttons from an unrelated device mode.
+
+## Lost Land Adventure PIN controls
+
+The Bandai Namco [US/EU operation manual, part 736-961](https://www.bmigaming.com/Games/Manuals/namco/lost-land-adventure-arcade-video-game-service-manual-namco-bandai.pdf)
+explains the PIN pad on printed pages 38–44 (PDF pages 43–49). It stores progress
+and artifacts; ordinary players can start and join with credits and their Start
+button without entering a PIN. The pad is shared: after PIN entry, the player
+selects the left or right gun on screen. Therefore its grouped `PIN 123`,
+`PIN 456`, `PIN 789` and `PIN *0H` template inputs must not be assigned player
+ownership from their `P1Button`/extension identifiers alone. Their actual emulator
+semantics still need verification before automated button assignment. No PIN or
+saved progress is created or overwritten by this research.

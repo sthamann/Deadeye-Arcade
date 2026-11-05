@@ -359,3 +359,9 @@ do not disable firewall, GameInput or other protections just to clear a result.
 Run the app and game checks as the normal signed-in user. Elevating a console
 transition must not also elevate its game-test process. Cxbx explicitly warns
 when a game is launched with administrator rights.
+
+## A loader console appears over Big Buck or another TeknoParrot game
+
+Check the native test finding. A responsive game renderer with Windows Terminal hosting the owned BudgieLoader console can lose foreground focus. Run the library repair after that recorded failure, or choose **Windows Console Host** under Windows Terminal → Settings → Startup → Default terminal application. This is a per-user preference for new consoles. Terminal stays installed and existing windows stay open.
+
+Deadeye backs up the previous preference and requires an exact match to the owned game loader. A separate maintenance terminal is not enough to trigger the repair. Repeat the game test afterwards. [Microsoft describes this setting and its values](https://learn.microsoft.com/en-us/windows/terminal/group-policy#default-terminal-application).

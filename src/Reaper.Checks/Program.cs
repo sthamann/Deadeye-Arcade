@@ -20,6 +20,7 @@ if(args is ["--simulate-controls",var simulationData])
 }
 
 int checks = 0;
+ConsoleCompatibilityChecks.Run(Check);
 Check(VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0100\VYPER_TEST_ONE") && VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0101\VYPER_TEST_TWO"), "USB recovery accepts supported Vyper composite node shapes");
 Check(!VyperUsbRecovery.IsDevice(@"USB\ROOT_HUB30\4&2221706A&0&0") && !VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0100&MI_00\7&ABC") && !VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0100\*") && !VyperUsbRecovery.IsDevice(@"USB\VID_3673&PID_0109\ABC"), "USB recovery rejects hubs, interfaces, wildcard IDs and unknown products");
 var playerFixture = new GameEntry("players", "The House of the Dead: Remake", "PC / Windows", "game.exe", [], ".", "pc", "");
@@ -78,6 +79,16 @@ if (OperatingSystem.IsWindows())
         Check(Reaper.Windows.NativeGameWindows.DolphinRenderer(Environment.ProcessId,0)==0,"A surviving Dolphin library window cannot masquerade as a rendered game after its renderer closes");
     }
     finally {if(rendererWindow!=0)WindowFixture.DestroyWindow(rendererWindow);if(libraryWindow!=0)WindowFixture.DestroyWindow(libraryWindow);}
+    nint statusWindow=WindowFixture.CreateWindowExW(0,"STATIC","Game Running",0x10000000,0,0,100,100,0,0,0,0);
+    nint otherWindow=WindowFixture.CreateWindowExW(0,"STATIC","Required runtime is missing",0x10000000,0,0,100,100,0,0,0,0);
+    nint hiddenServiceWindow=WindowFixture.CreateWindowExW(0,"STATIC","",0,0,0,136,39,0,0,0,0);
+    try {
+        Check(Reaper.Windows.NativeGameWindows.VisiblePrompt(otherWindow),"A visible native error surface remains eligible for blocking-dialog detection");
+        Check(!Reaper.Windows.NativeGameWindows.VisiblePrompt(hiddenServiceWindow)&&!Reaper.Windows.NativeGameWindows.VisiblePrompt(0),"An invisible service window or missing handle cannot stop a library batch as an interactive dialog");
+        Check(statusWindow!=0&&Reaper.Windows.NativeGameWindows.LauncherStatus(Environment.ProcessId,statusWindow),"A real visible owned launcher status window can be distinguished from its game renderer");
+        Check(!Reaper.Windows.NativeGameWindows.LauncherStatus(Environment.ProcessId+1,statusWindow),"Another process's Game Running window is never minimized by game-session recovery");
+        Check(!Reaper.Windows.NativeGameWindows.LauncherStatus(Environment.ProcessId,otherWindow)&&!Reaper.Windows.NativeGameWindows.LauncherStatus(Environment.ProcessId,0),"Runtime error windows and missing handles are never treated as disposable launcher status windows");
+    } finally {if(statusWindow!=0)WindowFixture.DestroyWindow(statusWindow);if(otherWindow!=0)WindowFixture.DestroyWindow(otherWindow);if(hiddenServiceWindow!=0)WindowFixture.DestroyWindow(hiddenServiceWindow);}
     using(var ready=new ManualResetEventSlim())
     using(var finish=new ManualResetEventSlim())
     {

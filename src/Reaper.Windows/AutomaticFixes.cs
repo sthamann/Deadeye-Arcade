@@ -19,7 +19,8 @@ internal static class AutomaticFixes
             var controls=await ControlMaintenance.Run(entries,data,cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
             var selected=entries.Select(g=>g.Id).ToHashSet();
-            var findings=report.Findings.Concat(controls.Games.Where(g=>selected.Contains(g.GameId)&&g.Status!="mapping-checked").Select(g=>new FixFinding(g.GameId,g.Title,"control-completeness","needs-action",
+            var consoleFindings=ConsoleCompatibility.Apply(entries,data);
+            var findings=report.Findings.Concat(consoleFindings).Concat(controls.Games.Where(g=>selected.Contains(g.GameId)&&g.Status!="mapping-checked").Select(g=>new FixFinding(g.GameId,g.Title,"control-completeness","needs-action",
                 string.Join(" · ",g.Players.SelectMany(p=>p.Issues.Select(i=>"P"+p.Player+": "+i)).DefaultIfEmpty(string.IsNullOrWhiteSpace(g.Note)?I18n.T("Vollständige Spielbelegung benötigt eine Titelprüfung."):g.Note)),[Path.Combine(data,"controls-audit.json")]))).ToArray();
             var combined=report with {Findings=findings};
             File.WriteAllText(Path.Combine(data,"fix-report.json"),System.Text.Json.JsonSerializer.Serialize(combined,JsonDefaults.Options));

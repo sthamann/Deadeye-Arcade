@@ -16,6 +16,7 @@ English and German are supported. A second check leaves healthy files unchanged.
 
 | Problem | Detection and response |
 | --- | --- |
+| Windows Terminal intercepts a game loader console | Requires a recent failed native focus test with a responsive renderer and a Terminal title matching the owned BudgieLoader executable inside that emulator directory. Backs up both per-user console delegation values and selects the Microsoft documented Windows Console Host preference for new consoles. A later user change is preserved. |
 | Moved TeknoParrot game or second launcher | Repairs only an unambiguous existing library file; keeps an original XML backup. |
 | Broken portable emulator storage/search paths | Adds the explicit Model 2 ROM folder, repairs inaccessible PCSX2 memory-card storage, and refreshes matching TeknoParrot vendor metadata. Existing accessible paths remain. |
 | Missing OpenAL | Reads actual PE imports, checks x86/x64 compatibility, downloads pinned OpenAL Soft 1.25.2 from its official source, restores only an absent DLL and preserves COPYING. Ambiguous mixed architectures or incompatible existing DLLs require review. |
@@ -164,3 +165,9 @@ selection. A new Remote Desktop connection owns its own display; Deadeye leaves
 that connection untouched. Other Lindbergh profiles, including HOTD 4 Special,
 do not inherit this rule. Fullscreen/menu evidence does not certify independent
 aiming, successful shots or physical recoil.
+
+## Console host compatibility
+
+Microsoft documents the paired console preference in its [Windows Terminal guide](https://learn.microsoft.com/en-us/windows/terminal/group-policy#default-terminal-application). The repair changes the default host for new consoles for the current Windows user, including consoles opened outside Deadeye. It requires the specific game failure described above. Merely opening Terminal does not trigger it.
+
+The original values, including an originally absent value, are saved locally in `console-preference-before-deadeye.json`. You can also choose your preferred host in Windows Terminal → Settings → Startup → Default terminal application. Deadeye preserves a later change and reports that manual attention is needed instead of repeatedly replacing your preference. This repair needs a fresh game test; applying it does not certify gameplay.

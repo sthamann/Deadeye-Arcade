@@ -91,7 +91,7 @@ public sealed class GameSession
     }
     public static GameBlockingDialog? CurrentBlockingDialog()
     {
-        nint window=GetForegroundWindow();if(window==0)return null;
+        nint window=GetForegroundWindow();if(!NativeGameWindows.VisiblePrompt(window))return null;
         var name=new StringBuilder(256);GetClassName(window,name,name.Capacity);
         GetWindowThreadProcessId(window,out var id);if(id==0)return null;
         try
@@ -372,22 +372,20 @@ public sealed class GameSession
                             } catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
                         if(windows.Observe(readyWindow.ToInt64(),Environment.TickCount64)) {
                             gameWindow=readyWindow;GamePresentation.Apply(game,readyWindow,nativeDisplay is not null);
-                            // Aliens' TeknoParrot status window can remain ahead of
-                            // the GLUT renderer. Minimize only this session's own
-                            // non-modal launcher after the renderer is ready.
-                            // Other applications and real error dialogs stay visible.
-                            if(game.Source=="teknoparrot" && (Path.GetFileNameWithoutExtension(game.SourcePath) is "AliensExtermination" or "AliensArmageddon"))
-                                try {
-                                    process.Refresh();
-                                    var launcherWindow=process.MainWindowHandle;
-                                    if(!process.HasExited && launcherWindow!=0 && launcherWindow!=readyWindow && IsRenderWindow(launcherWindow)
-                                        && process.MainWindowTitle.Equals("Game Running",StringComparison.OrdinalIgnoreCase))
-                                        ShowWindowAsync(launcherWindow,6);
-                                } catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
                             if(CurrentBlockingDialog() is null)SetForegroundWindow(readyWindow);
                             if(!legendShown) {legendShown=true;GameWindowReady?.Invoke(readyWindow);}
                         }
                     }
+                    // The owned launcher can raise its status window after the
+                    // renderer was first ready. Restore the game only from that
+                    // exact status window, never from another app or a dialog.
+                    if(game.Source=="teknoparrot" && !overlayVisible && ending is null && GameWindowAvailable)
+                        try {
+                            process.Refresh();var launcherWindow=process.MainWindowHandle;
+                            if(!process.HasExited && launcherWindow!=gameWindow && GetForegroundWindow()==launcherWindow
+                                && NativeGameWindows.LauncherStatus(process.Id,launcherWindow))
+                            {ShowWindowAsync(launcherWindow,6);SetForegroundWindow(gameWindow);}
+                        } catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
                     if (children > 0) lastChild = DateTime.Now;
                     if (targetSeen && liveTarget == 0 && (game.Source == "teknoparrot" || children == 0)) break;
                     if (descendantSeen && children == 0 && DateTime.Now - lastChild > TimeSpan.FromSeconds(3)) break;

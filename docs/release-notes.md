@@ -1,9 +1,8 @@
-Configure the controls each supported emulator actually consumes and keep unattended launch checks reliable.
+Keep arcade games in the foreground and recognize a specific Windows console compatibility failure.
 
-- Map Ranger Mission and Extreme Hunting 2 pump actions to the physical reload action on all four supported gun families. Pump no longer also fires an offscreen reload shot.
-- Read the actual Snes9x Super Scope and Opera 3DO gun controls. Show Cursor, Turbo, Pause and Option in the button legend where appropriate, while retaining separate console menu controls.
-- Retry a declined Windows renderer activation during a bounded startup interval. Slow-created game windows get their own activation interval; a successful activation is not repeatedly forced.
-- Recognize modern Windows security and GameInput foreground prompts during native tests. Stop for attention rather than continuing to attribute a shared Windows prompt to unrelated games. Security prompts remain visible and require their normal approval.
-- Expand the sourced player catalog to 51 editions. Ghost Squad Wii supports up to four local players; Duck Hunt's second player controls the duck rather than a second gun. Intake and Heavy Weapon Deluxe are marked single-player for their PC editions.
+- Diagnose a recent native TeknoParrot failure where Windows Terminal is hosting the owned BudgieLoader console while a responsive game renderer loses focus. Back up the current user's console preference, select the Microsoft documented Windows Console Host choice for new consoles, and read back both values. Preserve a later user change. This affects new consoles for that Windows user and requires a fresh game test.
+- Ignore invisible GameInput service windows when identifying blocking dialogs. Real visible Windows prompts still stop unattended tests.
+- Recover from a delayed, owned TeknoParrot Game Running status window after the renderer is available. Restrict recovery to that exact non-modal launcher status rather than other applications or error dialogs.
+- Add sourced player metadata for Lost Land Adventure and the four-player Raccoon Rampage profile. Deadeye currently prepares P1 and P2; the original cabinet's four-player specification does not enable four assignments in the app.
 
-Emulator profile routing, native launch checks and real multiplayer gameplay remain separate verification levels. This release does not certify every game or physical gun combination.
+Native launch checks, readable profile routing and physical multiplayer gameplay remain separate verification levels.

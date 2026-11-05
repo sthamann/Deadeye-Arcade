@@ -174,5 +174,13 @@
     "scope": "Exact SilentHill vendor profile with one existing Windowed field",
     "source": "https://github.com/sthamann/deadeye-arcade",
     "verification": "Library repair and ordinary launch use the same reviewed Windowed=1 correction. Preserve resolution and both gun assignments; retain the original profile backup. Ambiguous fields remain unchanged and require review. Native menu/resume and virtual ammunition changes were observed; full aiming accuracy and physical gameplay remain separate."
+  },
+  {
+    "id": "windows-console-focus",
+    "name": "Windows console focus compatibility",
+    "mode": "automatic",
+    "scope": "Recent failed native TeknoParrot test, responsive game renderer, WindowsTerminal foreground title matching an owned BudgieLoader executable inside that emulator directory",
+    "source": "https://learn.microsoft.com/en-us/windows/terminal/group-policy#default-terminal-application",
+    "verification": "Select the documented per-user Windows Console Host preference only after this specific diagnosis. Save both original string values or their absence before changing either. Re-read both values and roll back on write failure. A later user preference is preserved. This changes new console hosting for the current Windows user, not security settings or gameplay certification."
   }
 ]
