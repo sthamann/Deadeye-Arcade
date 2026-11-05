@@ -182,5 +182,13 @@
     "scope": "Recent failed native TeknoParrot test, responsive game renderer, WindowsTerminal foreground title matching an owned BudgieLoader executable inside that emulator directory",
     "source": "https://learn.microsoft.com/en-us/windows/terminal/group-policy#default-terminal-application",
     "verification": "Select the documented per-user Windows Console Host preference only after this specific diagnosis. Save both original string values or their absence before changing either. Re-read both values and roll back on write failure. A later user preference is preserved. This changes new console hosting for the current Windows user, not security settings or gameplay certification."
+  },
+  {
+    "id": "windows-hidden-gameinput-focus",
+    "name": "Hidden GameInput focus recovery",
+    "mode": "launch-time",
+    "scope": "Visible owned game renderer while the current foreground window is invisible, untitled, exactly GameInputServiceWindow and belongs to GameInputSvc or GameInputRedistService; no overlay or session shutdown",
+    "source": "https://github.com/sthamann/Deadeye-Arcade",
+    "verification": "Observed foreground failures for Big Buck, HOTD EX and Silent Hill while the renderer remained responsive. Restore foreground only from the exact hidden service surface. Count only verified activation of the actual renderer, retain real focus requirements in native tests and record recovery count. Services, registry and security settings remain unchanged."
   }
 ]

@@ -2,6 +2,12 @@ namespace Reaper.Core;
 
 public static class GameRuntimeWindows
 {
+    // Observed on the local console: an untitled, invisible service HWND can
+    // take foreground after a game was already activated. This is not a UI
+    // the user selected. Never generalize recovery to visible apps or prompts.
+    public static bool HiddenGameInput(string windowClass,string processName,bool visible,string title)=>!visible && title.Length==0
+        && windowClass=="GameInputServiceWindow"
+        && new[]{"GameInputSvc","GameInputRedistService"}.Contains(processName,StringComparer.OrdinalIgnoreCase);
     // Modern Windows security and device prompts are not always #32770 dialogs.
     // These hosts cannot be a game renderer. Preserve the prompt and stop the
     // unattended batch instead of recording every following game as broken.

@@ -155,6 +155,8 @@ startup reference shows the resulting profile and any unresolved controls.
 | Changed game or emulator locations | Repairs supported unambiguous paths and retains profile backups. |
 | Selected P1/P2 guns | Writes supported device and action routes for the chosen pair, including supported mixed models. |
 | Library repair and launch | Share the same profile preparation, including installed multiplayer helpers. An unavailable selected P1 leaves existing assignments intact. |
+| Alien3 start input | Combines each gun’s Shoot and Start actions into the game’s real trigger input. The legend shows Shoot / Start and omits unused dedicated Start ports. |
+| Hidden GameInput window takes focus | Returns to the visible game only from the exact untitled, invisible Windows service window. Visible apps, prompts and the game menu are preserved. Native tests still require actual game focus. |
 | HOTD III ArcadeMod input | Sets both players to the required keyboard mode, writes their actual Start scan codes and reads back trigger, reload and path selection. Temporarily routes Vyper magazine pull to the helper's fixed reload input. |
 | Vyper in RPCS3 | Keeps Move Cross reachable on D-pad Down when the recoil selector has no click assignment. |
 | Supported Wii titles | Applies matching disc-region accuracy profiles and independent input bridge channels. |

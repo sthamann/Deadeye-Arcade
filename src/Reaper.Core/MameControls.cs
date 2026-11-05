@@ -23,7 +23,10 @@ public static class MameControls
     {
         var input=XElement.Parse(metadata.MachineXml).Element("input");
         if(input is null || player>Players(metadata))return [];
-        var result=new List<string>{"START"+player};
+        // Alien3 replaces both generic Start bits with service/unused inputs.
+        // Its original cabinet starts with the trigger after inserting credits.
+        var result=new List<string>();
+        if(metadata.Rom!="alien3")result.Add("START"+player);
         if(player<=((int?)input.Attribute("coins")??0))result.Add("COIN"+player);
         foreach(var control in input.Elements("control").Where(c=>((int?)c.Attribute("player")??1)==player))
         {
@@ -50,7 +53,16 @@ public static class MameControls
     {
         var guns=bindings.Where(b=>b.Player is 1 or 2).ToArray();
         string controller=Path.Combine(data,"controllers","reaper.cfg");Directory.CreateDirectory(Path.GetDirectoryName(controller)!);
-        string text=LaunchRules.MameController(guns);if(!File.Exists(controller)||File.ReadAllText(controller)!=text)File.WriteAllText(controller,text);
+        var controllerDocument=XDocument.Parse(LaunchRules.MameController(guns));
+        if(Rom(game)=="alien3")
+            foreach(var gun in guns)
+            {
+                XElement? Sequence(string type)=>controllerDocument.Descendants("port").SingleOrDefault(p=>(string?)p.Attribute("type")==type)?.Element("newseq");
+                var trigger=Sequence($"P{gun.Player}_BUTTON1");var start=Sequence("START"+gun.Player);
+                if(trigger is not null && start is not null)
+                    trigger.Value=string.Join(" OR ",new[]{trigger.Value,start.Value}.SelectMany(v=>v.Split(" OR ")).Distinct());
+            }
+        string text=controllerDocument.ToString();if(!File.Exists(controller)||File.ReadAllText(controller)!=text)File.WriteAllText(controller,text);
         var metadata=Metadata(game,data);if(metadata is null)return 0;
         var required=guns.SelectMany(g=>RequiredPorts(metadata,g.Player)).ToHashSet();
         var expected=XDocument.Parse(text).Descendants("port").Where(p=>required.Contains((string?)p.Attribute("type")??""))
@@ -85,7 +97,7 @@ public static class MameControls
             // unknown games generic rather than guessing their secondary action.
             if(metadata.Rom is "alien3" or "term2")
             {
-                if(type==$"P{player}_BUTTON1")label=I18n.T("Schießen");
+                if(type==$"P{player}_BUTTON1")label=I18n.T(metadata.Rom=="alien3"?"Schießen / Start":"Schießen");
                 if(type==$"P{player}_BUTTON2")label=I18n.T("Bombe");
             }
             rows.Add(new(player,label,string.IsNullOrWhiteSpace(expression)||expression=="NONE"?I18n.T("Nicht belegt"):expression,"MAME -listxml + effective cfg",expression,aim,type));

@@ -149,6 +149,9 @@ Check(GameRuntimeWindows.DolphinRenderer("Dolphin 5.0-21168 | JIT64 DC | Vulkan 
 Check(GameRuntimeWindows.UnrealShipping(@"C:\Game\Binaries\Win64\ESGame-Win64-Shipping.exe")&&GameRuntimeWindows.UnrealShipping("/game/Binaries/Win32/Test-Win32-Shipping.exe")&&!GameRuntimeWindows.UnrealShipping(@"C:\Game\Binaries\Win32\ESGame-Win64-Shipping.exe")&&!GameRuntimeWindows.UnrealShipping("/launchers/ESGame-Win64-Shipping.exe"),"Unreal renderer selection is limited to matching packaged Shipping runtimes and architecture directories");
 Check(GameRuntimeWindows.BlockingPrompt("Windows.UI.Core.CoreWindow","PickerHost") && GameRuntimeWindows.BlockingPrompt("unknown","gameinputsvc") && GameRuntimeWindows.BlockingPrompt("#32770","cxbx"),"Modern Windows security and GameInput prompts stop unattended tests before unrelated games inherit focus failures");
 Check(!GameRuntimeWindows.BlockingPrompt("UnityWndClass","GameInputDemo") && !GameRuntimeWindows.BlockingPrompt("FREEGLUT","BudgieLoader"),"Prompt detection preserves actual game renderers and does not match arbitrary GameInput name prefixes");
+Check(GameRuntimeWindows.HiddenGameInput("GameInputServiceWindow","GameInputSvc",false,"") && GameRuntimeWindows.HiddenGameInput("GameInputServiceWindow","GameInputRedistService",false,""),"Only the observed hidden untitled GameInput service surface qualifies for focus recovery");
+Check(!GameRuntimeWindows.HiddenGameInput("GameInputServiceWindow","GameInputSvc",true,"") && !GameRuntimeWindows.HiddenGameInput("GameInputServiceWindow","GameInputSvc",false,"Windows prompt"),"Visible or titled GameInput surfaces are preserved for user attention");
+Check(!GameRuntimeWindows.HiddenGameInput("GameInputServiceWindow","GameInputDemo",false,"") && !GameRuntimeWindows.HiddenGameInput("#32770","GameInputSvc",false,""),"Ordinary applications and dialog classes cannot trigger hidden service recovery");
 Check(GameRuntimeWindows.ChildRuntime("Railbreak.exe",runtimeRoot,Path.Combine(runtimeRoot,"Project","Binaries","Win64","Project-Win64-Shipping.exe")) && !GameRuntimeWindows.ChildRuntime("Railbreak.exe",runtimeRoot,Path.Combine(runtimeRoot,"Launcher","update.exe")),"Packaged game children are recognized without accepting arbitrary updater windows");
 Check(!GameRuntimeWindows.ChildRuntime("Railbreak.exe",runtimeRoot,Path.Combine(runtimeRoot+"-other","Project","Binaries","Win64","Project-Win64-Shipping.exe")) && GameRuntimeWindows.KnownLauncher("steam.exe"),"Known launcher windows and game binaries outside the configured game directory cannot certify a game launch");
 Check(GameRuntimeWindows.ChildRuntime("DeadRelay.exe",runtimeRoot,Path.Combine(runtimeRoot,"DeadRelay","Binaries","Win64","DeadRelay.exe"))&&GameRuntimeWindows.ChildRuntime("DeadRelay.exe",runtimeRoot,Path.Combine(runtimeRoot,"DeadRelay","Binaries","Win32","DeadRelay.exe")),"Packaged Unreal development builds recognize only the configured bootstrap's exact executable name in an architecture directory");
@@ -1523,11 +1526,19 @@ RButton::y
         var cabinet=mameContract with {Id="labels-"+rom,Arguments=[rom]};
         var cabinetMetadata=mameMetadata with {Rom=rom,MachineXml="<machine><input players='2' coins='2'><control type='lightgun' player='1' buttons='2'/><control type='lightgun' player='2' buttons='2'/></input></machine>"};
         File.WriteAllText(MameControls.MetadataPath(cabinet,root),System.Text.Json.JsonSerializer.Serialize(cabinetMetadata,JsonDefaults.Options));
+        MameControls.Configure(cabinet,root,[p1,p2]);
         var cabinetRows=MameControls.Read(cabinet,root)!.Rows;
-        Check(Enumerable.Range(1,2).All(p=>cabinetRows.Single(r=>r.SourceKey==$"P{p}_BUTTON1").Function=="Schießen"&&cabinetRows.Single(r=>r.SourceKey==$"P{p}_BUTTON2").Function=="Bombe"),"Reviewed "+rom+" cabinet labels identify fire and bomb for both players without changing input expressions");
+        Check(Enumerable.Range(1,2).All(p=>cabinetRows.Single(r=>r.SourceKey==$"P{p}_BUTTON1").Function==(rom=="alien3"?"Schießen / Start":"Schießen")&&cabinetRows.Single(r=>r.SourceKey==$"P{p}_BUTTON2").Function=="Bombe"),"Reviewed "+rom+" cabinet labels identify the actual fire/start and bomb actions for both players");
+        if(rom=="alien3")
+        {
+            var effective=MameControls.Effective(cabinet,root);
+            var basePorts=XDocument.Parse(LaunchRules.MameController([p1,p2])).Descendants("port").ToArray();
+            Check(Enumerable.Range(1,2).All(p=>!MameControls.RequiredPorts(cabinetMetadata,p).Contains("START"+p) && effective[$"P{p}_BUTTON1"].Contains(basePorts.Single(row=>(string?)row.Attribute("type")=="START"+p).Element("newseq")!.Value)),"Alien3 maps the physical Start action to its real trigger input and never audits an invented Start port");
+            Check(MameControls.Configure(cabinet,root,[p1,p2])==0 && MameControls.Read(cabinet,root)!.Rows.All(row=>!row.SourceKey!.StartsWith("START")),"Alien3 preparation remains idempotent and its legend omits unused dedicated Start inputs");
+        }
         I18n.Language="en";
         var englishRows=MameControls.Read(cabinet,root)!.Rows;
-        Check(Enumerable.Range(1,2).All(p=>englishRows.Single(r=>r.SourceKey==$"P{p}_BUTTON1").Function=="Shoot"&&englishRows.Single(r=>r.SourceKey==$"P{p}_BUTTON2").Function=="Bomb")&&englishRows.Select(r=>r.Expression).SequenceEqual(cabinetRows.Select(r=>r.Expression)),"English "+rom+" labels preserve both players' configured routes");
+        Check(Enumerable.Range(1,2).All(p=>englishRows.Single(r=>r.SourceKey==$"P{p}_BUTTON1").Function==(rom=="alien3"?"Shoot / Start":"Shoot")&&englishRows.Single(r=>r.SourceKey==$"P{p}_BUTTON2").Function=="Bomb")&&englishRows.Select(r=>r.Expression).SequenceEqual(cabinetRows.Select(r=>r.Expression)),"English "+rom+" labels preserve both players' configured routes");
         I18n.Language="de";
     }
     var brokenAim=XDocument.Load(mameTitle);brokenAim.Descendants("input").Single().Add(new XElement("port",new XAttribute("type","P2_LIGHTGUN_X"),new XElement("newseq",new XAttribute("type","standard"),"GUNCODE_1_XAXIS")));brokenAim.Save(mameTitle);

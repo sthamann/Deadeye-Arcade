@@ -869,5 +869,56 @@
       "checkedAt": "2026-11-05",
       "note": "The four-player arcade edition supports cooperative play. Deadeye currently prepares the selected P1/P2 pair; this metadata does not enable four local gun assignments."
     }
+  },
+  {
+    "titles": [
+      "Alien3: The Gun"
+    ],
+    "platform": "Arcade — MAME",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.gamesdatabase.org/Media/SYSTEM/Arcade/Manual/formated/Alien3-_The_Gun_-_1993_-_Sega.pdf"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "The Sega cabinet has independent left and right players. Insert credits and use the trigger to start; there is no dedicated gameplay Start input."
+    }
+  },
+  {
+    "titles": [
+      "Terminator 2 - Judgment Day"
+    ],
+    "platform": "Arcade — MAME",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.manualslib.com/manual/1589100/Midway-Terminator-2-Judgment-Day.html?page=15"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "The original Midway cabinet supports two players, each with gun, bomb and Start controls."
+    }
+  },
+  {
+    "titles": [
+      "Virtua Cop (Revision B)"
+    ],
+    "platform": "Arcade — Sega Model 2",
+    "steamAppId": null,
+    "teknoProfile": null,
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.manualslib.com/manual/3498748/Sega-Virtua-Cop.html?page=14"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "The original Sega arcade cabinet supports left and right players with independent Start and gun controls."
+    }
   }
 ]

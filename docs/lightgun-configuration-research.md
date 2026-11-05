@@ -96,3 +96,9 @@ selects the left or right gun on screen. Therefore its grouped `PIN 123`,
 ownership from their `P1Button`/extension identifiers alone. Their actual emulator
 semantics still need verification before automated button assignment. No PIN or
 saved progress is created or overwritten by this research.
+
+## Alien3 start input
+
+The [Sega cabinet manual](https://www.gamesdatabase.org/Media/SYSTEM/Arcade/Manual/formated/Alien3-_The_Gun_-_1993_-_Sega.pdf), printed page 8 (PDF page 9), starts play with the trigger after inserting credits. The [MAME System 32 driver](https://github.com/mamedev/mame/blob/master/src/mame/sega/segas32.cpp) replaces the generic Start bits in the Alien3 input definition with service/unused bits. Therefore a mapped but unused START1/START2 port cannot establish working Start controls.
+
+For the exact `alien3` recipe, Deadeye combines each physical player's Shoot and Start routes into that player's real BUTTON1 input, labels it Shoot / Start and omits the unused dedicated Start ports from the audit and legend. Other MAME games retain their own Start inputs. Existing coin, bomb and aim routes stay separate.

@@ -13,6 +13,8 @@ internal static class NativeGameWindows
     [DllImport("user32.dll")] private static extern bool EnumChildWindows(nint parent,EnumWindow callback,nint parameter);
     [DllImport("user32.dll")] private static extern bool IsWindowVisible(nint window);
     [DllImport("user32.dll")] private static extern bool IsIconic(nint window);
+    [DllImport("user32.dll")] private static extern bool SetForegroundWindow(nint window);
+    [DllImport("user32.dll")] private static extern nint GetForegroundWindow();
     [DllImport("user32.dll")] private static extern nint GetAncestor(nint window,uint flags);
     [DllImport("user32.dll")] private static extern uint GetWindowThreadProcessId(nint window,out uint processId);
     [DllImport("user32.dll",CharSet=CharSet.Unicode)] private static extern int GetWindowTextW(nint window,StringBuilder text,int capacity);
@@ -43,6 +45,23 @@ internal static class NativeGameWindows
         return string.Join("\n",lines.Distinct());
     }
     public static bool VisiblePrompt(nint window) => window!=0 && IsWindowVisible(window) && !IsIconic(window);
+    public static bool RestoreHiddenGameInputFocus(nint renderer)
+    {
+        nint foreground=GetForegroundWindow();
+        if(renderer==0||foreground==0||foreground==renderer||!IsWindowVisible(renderer)||IsIconic(renderer))return false;
+        var name=new StringBuilder(128);GetClassNameW(foreground,name,name.Capacity);
+        var title=new StringBuilder(512);GetWindowTextW(foreground,title,title.Capacity);
+        GetWindowThreadProcessId(foreground,out uint owner);
+        try
+        {
+            using var process=System.Diagnostics.Process.GetProcessById((int)owner);
+            if(!GameRuntimeWindows.HiddenGameInput(name.ToString(),process.ProcessName,IsWindowVisible(foreground),title.ToString()))return false;
+            // Count only a verified return to the real renderer. The test must
+            // still fail if Windows refuses activation or focus is lost again.
+            return GetForegroundWindow()==foreground && SetForegroundWindow(renderer) && GetForegroundWindow()==renderer;
+        }
+        catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) {return false;}
+    }
     public static bool LauncherStatus(int processId,nint window)
     {
         if(window==0||!IsWindowVisible(window)||IsIconic(window))return false;

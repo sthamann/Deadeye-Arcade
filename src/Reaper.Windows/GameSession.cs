@@ -19,6 +19,7 @@ public sealed class GameSession
     private int reserved;
     private nint job;
     private nint gameWindow;
+    public int HiddenServiceFocusRecoveries { get; private set; }
     private DolphinGunBridge? bridge;
     public void ResetInput() => bridge?.ResetInput();
     public object? InputDiagnostics() => bridge?.Snapshot();
@@ -77,7 +78,7 @@ public sealed class GameSession
     }
     public object InspectProcesses() => new {
         targetExecutable, gameWindow = gameWindow.ToInt64(), gameWindowDetails=InspectWindow(gameWindow), foregroundWindow = GetForegroundWindow().ToInt64(),
-        foregroundProcess = ForegroundProcess(),
+        foregroundProcess = ForegroundProcess(), foregroundWindowDetails=InspectWindow(GetForegroundWindow()),
         processes=LiveProcesses().Select(id=> {
             try {using var p=Process.GetProcessById(id);return new {id,p.ProcessName,path=p.MainModule?.FileName,window=p.MainWindowHandle.ToInt64(),p.MainWindowTitle};}
             catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) {return new {id,ProcessName="",path=(string?)null,window=0L,MainWindowTitle=e.Message};}
@@ -87,7 +88,7 @@ public sealed class GameSession
     {
         var title=new StringBuilder(512);GetWindowTextW(window,title,title.Capacity);
         var name=new StringBuilder(256);GetClassName(window,name,name.Capacity);
-        return new{handle=window.ToInt64(),title=title.ToString(),className=name.ToString()};
+        return new{handle=window.ToInt64(),title=title.ToString(),className=name.ToString(),visible=IsWindowVisible(window),minimized=IsIconic(window)};
     }
     public static GameBlockingDialog? CurrentBlockingDialog()
     {
@@ -174,7 +175,7 @@ public sealed class GameSession
     public async Task Run(GameEntry game, string dataDirectory, IEnumerable<GunBinding> bindings, CancellationToken cancellationToken = default, bool fixesPrepared = false)
     {
         if (Interlocked.CompareExchange(ref reserved,1,0)!=0) throw new InvalidOperationException(I18n.T("Es läuft bereits ein Spiel."));
-        CleanupIssues.Clear();
+        CleanupIssues.Clear(); HiddenServiceFocusRecoveries=0;
         var helpers = new List<Process>();
         var helperJobs = new List<nint>();
         GameInputPreparation? input = null;
@@ -386,6 +387,8 @@ public sealed class GameSession
                                 && NativeGameWindows.LauncherStatus(process.Id,launcherWindow))
                             {ShowWindowAsync(launcherWindow,6);SetForegroundWindow(gameWindow);}
                         } catch(Exception e) when(e is ArgumentException or InvalidOperationException or System.ComponentModel.Win32Exception) { }
+                    if(!overlayVisible && ending is null && GameWindowAvailable && NativeGameWindows.RestoreHiddenGameInputFocus(gameWindow))
+                        HiddenServiceFocusRecoveries++;
                     if (children > 0) lastChild = DateTime.Now;
                     if (targetSeen && liveTarget == 0 && (game.Source == "teknoparrot" || children == 0)) break;
                     if (descendantSeen && children == 0 && DateTime.Now - lastChild > TimeSpan.FromSeconds(3)) break;
