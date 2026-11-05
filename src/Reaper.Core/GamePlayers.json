@@ -920,5 +920,54 @@
       "checkedAt": "2026-11-05",
       "note": "The original Sega arcade cabinet supports left and right players with independent Start and gun controls."
     }
+  },
+  {
+    "titles": [
+      "After Dark"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "AfterDark",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://techsupporttool.com/knowledgebase/Manuals/Games/After%20Dark%20Dlx/After%20Dark%20Dlx.pdf"
+      ],
+      "checkedAt": "2026-11-05",
+      "note": "The original cabinet has a shared steering wheel and seat-stop controls. Deadeye maps steering to P1 directions; cabinet motion hardware is not emulated by a gun."
+    }
+  },
+  {
+    "titles": [
+      "Silent Hill: The Arcade"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "SilentHill",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://www.konami.com/arcadegames/products/site/am_silent_hill/"
+      ],
+      "checkedAt": "2026-11-05"
+    }
+  },
+  {
+    "titles": [
+      "The House of the Dead 4"
+    ],
+    "platform": null,
+    "steamAppId": null,
+    "teknoProfile": "HOTD4",
+    "support": {
+      "mode": "local-coop",
+      "maxPlayers": 2,
+      "sources": [
+        "https://segaarcade.com/games/the-house-of-the-dead-4"
+      ],
+      "checkedAt": "2026-11-05"
+    }
   }
 ]

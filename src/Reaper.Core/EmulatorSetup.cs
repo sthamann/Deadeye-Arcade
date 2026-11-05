@@ -52,14 +52,16 @@ public static class EmulatorSetup
         }
         // Command-line launches can bypass TeknoParrot's profile editor migration.
         // Use installed vendor eligibility/loader metadata; preserve user inputs.
+        var vendorRoot=vendor.Root;
+        if(vendorRoot is null)return false;
         bool changed=false;
-        if(upgradedSpecial && vendor.Root?.Element("ConfigValues") is {} defaults && user.Root.Element("ConfigValues") is {} settings)
+        if(upgradedSpecial && vendorRoot.Element("ConfigValues") is {} defaults && user.Root.Element("ConfigValues") is {} settings)
             foreach(var field in defaults.Elements("FieldInformation"))
                 if(!settings.Elements("FieldInformation").Any(f=>f.Element("CategoryName")?.Value==field.Element("CategoryName")?.Value && f.Element("FieldName")?.Value==field.Element("FieldName")?.Value))
                 {settings.Add(new System.Xml.Linq.XElement(field));changed=true;}
         foreach(string name in new[]{"Patreon","EmulatorType","Is64Bit","RequiresAdmin","HasTwoExecutables","LaunchSecondExecutableFirst","ExecutableName2"})
         {
-            var original=vendor.Root.Element(name);if(original is null)continue;
+            var original=vendorRoot.Element(name);if(original is null)continue;
             var current=user.Root.Element(name);if(current?.Value==original.Value)continue;
             if(current is null)user.Root.Add(new System.Xml.Linq.XElement(name,original.Value));else current.Value=original.Value;
             changed=true;
@@ -68,9 +70,9 @@ public static class EmulatorSetup
         // an old user profile still disables it and points at a removed drive.
         // Use only the vendor's exact filename beside an existing main binary.
         // A working custom path always wins; no directory search is performed.
-        if(vendor.Root.Element("HasTwoExecutables")?.Value.Equals("true",StringComparison.OrdinalIgnoreCase)==true)
+        if(vendorRoot.Element("HasTwoExecutables")?.Value.Equals("true",StringComparison.OrdinalIgnoreCase)==true)
         {
-            string? name=vendor.Root.Element("ExecutableName2")?.Value;
+            string? name=vendorRoot.Element("ExecutableName2")?.Value;
             var second=user.Root.Element("GamePath2");
             string? primary=user.Root.Element("GamePath")?.Value;
             if(!string.IsNullOrWhiteSpace(name)&&name is not "." and not ".."&&name.IndexOfAny(['/', '\\', ':'])<0&&!string.IsNullOrWhiteSpace(primary))

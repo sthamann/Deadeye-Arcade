@@ -31,6 +31,10 @@ Check(GamePlayers.Read(playerFixture with { Title="BangBang PewPew" })?.Mode == 
 Check(GamePlayers.Read(playerFixture with { Title="Unknown edition", Players="2 players confirmed" }) is null, "Unverified imported player notes never become official metadata");
 Check(GamePlayers.Read(playerFixture with { Title="Renamed game", MetadataSources=["https://store.steampowered.com/app/3376690/"] })?.Mode == "local-coop", "Stable Steam identity survives renamed titles");
 Check(GamePlayers.Read(playerFixture with { Source="teknoparrot", Platform="Arcade", SourcePath=@"C:\Games\UserProfiles\WalkingDead.xml", Title="Renamed arcade game" })?.MaxPlayers == 2, "Manufacturer player metadata uses the actual TeknoParrot profile identity");
+foreach(string profile in new[]{"AfterDark","SilentHill","HOTD4"})
+    Check(GamePlayers.Read(playerFixture with {Source="teknoparrot",Platform="Arcade",SourcePath=profile+".xml",Title="Renamed cabinet"}) is {Mode:"local-coop",MaxPlayers:2}
+        && GamePlayers.Read(playerFixture with {Platform="Nintendo Wii",Title=profile}) is null,
+        "Reviewed manufacturer two-player metadata resolves only for the exact "+profile+" arcade edition");
 Check(GamePlayers.Read(playerFixture with {Title="The House of the Dead - Overkill",Platform="Nintendo Wii"}) is {Mode:"local-mixed",MaxPlayers:4,Note:not null},"Wii Overkill keeps two-player story separate from its four-player minigames");
 Check(GamePlayers.Read(playerFixture with {Title="Link's Crossbow Training",Platform="Nintendo Wii"}) is {Mode:"alternating",MaxPlayers:4},"Crossbow Training is four alternating players, not four simultaneous guns");
 Check(GamePlayers.Read(playerFixture with {Title="Sin & Punishment - Star Successor",Platform="Nintendo Wii"}) is {Mode:"asymmetric",MaxPlayers:2},"The Wii Star Successor edition names the assisting second player without borrowing N64 controls");
@@ -1139,6 +1143,40 @@ RButton::y
     }
     Check(TeknoActionRoutes.Find("WartranTroopers","Enter","P1Button4") is null && TeknoActionRoutes.Find("RawThrillsGUN","Toggle Cursor","P1ButtonLeft") is null,"Cabinet confirm and cursor actions require their exact vendor routing identifiers");
     Check(TeknoActionRoutes.Find("WartranTroopers","Player 1 Throw","P1Button2") is null && TeknoActionRoutes.Find("TooSpicy","Pedal Left","P1ButtonRight") is null,"Throw and pedal routes require the exact vendor action and native routing identifier");
+    foreach(string wheelModel in GunSystems.Catalog.Select(g=>g.Id))
+    {
+        var wheel=new XDocument(matrixTemplate);wheel.Root!.Element("EmulationProfile")!.Value="WartranTroopers";
+        foreach(var (name,key) in new[]{("Wheel Left","P1Button5"),("Wheel Right","P1Button6"),("Emergency Stop","Service1")})
+            wheel.Root.Element("JoystickButtons")!.Add(new XElement("JoystickButtons",new XElement("ButtonName",name),new XElement("InputMapping",key)));
+        wheel.Save(Path.Combine(tp,"GameProfiles","model-matrix.xml"));wheel.Save(matrixPath);
+        var pair=new[]{MatrixGun(wheelModel,1),MatrixGun(wheelModel,2)};var wheelGame=repair with{SourcePath=matrixPath};
+        TeknoGunSetup.Configure(wheelGame,pair);
+        var wheelRows=OverlayControls.Read(wheelGame,root,pair).Rows.Where(r=>r.Function is "Wheel Left" or "Wheel Right" or "Emergency Stop").ToArray();
+        Check(wheelRows.Length==3 && wheelRows.All(r=>r.Player==1 && StartupControls.Resolve(r,pair[0]).Resolved)
+            && wheelRows.Select(r=>r.Expression).Distinct().Count()==3 && (await ControlSimulation.Replay(wheelRows,pair)).All(r=>r.Status=="profile-routed")
+            && GameControlAudit.Read(wheelGame,root,pair).Status=="mapping-checked" && TeknoGunSetup.Configure(wheelGame,pair)==0,
+            "After Dark steering and seat-stop actions reach separate captured "+wheelModel+" directions through saved profiles without sharing P2 or rewriting unchanged settings");
+    }
+    Check(TeknoActionRoutes.Find("WartranTroopers","Wheel Left","P1Button6") is null
+        && TeknoActionRoutes.Find("WartranTroopers","Emergency Stop","Test") is null
+        && TeknoActionRoutes.Find("OtherGame","Wheel Right","P1Button6") is null,
+        "After Dark steering recipes cannot replace unrelated shared-profile buttons or a cabinet Test input");
+    foreach(string musicModel in GunSystems.Catalog.Select(g=>g.Id))
+    {
+        var music=new XDocument(matrixTemplate);music.Root!.Element("EmulationProfile")!.Value="MusicGunGun2";
+        foreach(var (name,key) in new[]{("Decision","P1ButtonStart"),("Direction Left","P1ButtonLeft"),("Direction Right","P1ButtonRight")})
+            music.Root.Element("JoystickButtons")!.Add(new XElement("JoystickButtons",new XElement("ButtonName",name),new XElement("InputMapping",key)));
+        music.Save(matrixPath);var pair=new[]{MatrixGun(musicModel,1),MatrixGun(musicModel,2)};var musicGame=repair with{SourcePath=matrixPath};
+        TeknoGunSetup.Configure(musicGame,pair);
+        var menuRows=OverlayControls.Read(musicGame,root,pair).Rows.Where(r=>r.Function is "Decision" or "Direction Left" or "Direction Right").ToArray();
+        Check(menuRows.Length==3 && menuRows.All(r=>r.Player==1 && StartupControls.Resolve(r,pair[0]).Resolved)
+            && menuRows.Select(r=>r.Expression).Distinct().Count()==3 && (await ControlSimulation.Replay(menuRows,pair)).All(r=>r.Status=="profile-routed")
+            && TeknoGunSetup.Configure(musicGame,pair)==0,
+            "Music GunGun 2 decision and selection directions reach distinct captured "+musicModel+" inputs with exact P1 ownership");
+    }
+    Check(TeknoActionRoutes.Find("MusicGunGun2","Decision","P2ButtonStart") is null
+        && TeknoActionRoutes.Find("MusicGunGun2","Direction Left","P1ButtonRight") is null,
+        "Music GunGun 2 selection rules cannot invent a second shared decision input or reverse its routing identifiers");
     matrixTemplate.Save(Path.Combine(tp,"GameProfiles","model-matrix.xml"));
     foreach(string firstModel in GunSystems.Catalog.Select(g=>g.Id))foreach(string secondModel in GunSystems.Catalog.Select(g=>g.Id))
     {

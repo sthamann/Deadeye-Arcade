@@ -36,6 +36,7 @@ brings you back to your library when a game ends.
 - **Prepare supported games.** Input adapters use the selected guns, runtime
   inspection finds missing dependencies, and reviewed repairs handle known path,
   profile and presentation problems.
+- **Reach game-specific actions.** Reviewed profiles include Alien3’s trigger to start, After Dark’s shared steering controls and Music GunGun 2’s selection buttons. Setup reads the saved routes back and flags missing captured controls.
 - **Keep the selected players connected.** Each launch checks the current USB
   devices, recovers changed interface paths and reads back required game controls.
   A missing Start or trigger in a supported profile produces a specific setup

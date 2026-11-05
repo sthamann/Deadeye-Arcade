@@ -102,3 +102,11 @@ saved progress is created or overwritten by this research.
 The [Sega cabinet manual](https://www.gamesdatabase.org/Media/SYSTEM/Arcade/Manual/formated/Alien3-_The_Gun_-_1993_-_Sega.pdf), printed page 8 (PDF page 9), starts play with the trigger after inserting credits. The [MAME System 32 driver](https://github.com/mamedev/mame/blob/master/src/mame/sega/segas32.cpp) replaces the generic Start bits in the Alien3 input definition with service/unused bits. Therefore a mapped but unused START1/START2 port cannot establish working Start controls.
 
 For the exact `alien3` recipe, Deadeye combines each physical player's Shoot and Start routes into that player's real BUTTON1 input, labels it Shoot / Start and omits the unused dedicated Start ports from the audit and legend. Other MAME games retain their own Start inputs. Existing coin, bomb and aim routes stay separate.
+
+## After Dark steering
+
+The [UNIS After Dark DLX operation manual](https://techsupporttool.com/knowledgebase/Manuals/Games/After%20Dark%20Dlx/After%20Dark%20Dlx.pdf), printed pages 12–14, describes two gun players, steering during avoidance scenes and an emergency button that toggles seat motion. The installed TeknoParrot template exposes `Wheel Left` on `P1Button5`, `Wheel Right` on `P1Button6` and `Emergency Stop` on `Service1`. Exact action and routing identifiers now select P1 Left, Right and Up respectively. The two gun triggers, coins and Start inputs remain separate. This is a software steering and button recipe; it does not add motion hardware or establish completed gameplay.
+
+## Music GunGun 2 selection
+
+The installed vendor template identifies `Decision` as `P1ButtonStart` and its two selection directions as `P1ButtonLeft` and `P1ButtonRight`. These now receive the selected P1 gun’s Start, Left and Right controls. The rule requires the exact MusicGunGun2 profile and native input identifier. The unrelated shared Select/Enter fields retain their review status; this change does not infer their cabinet semantics or claim an in-game pass.

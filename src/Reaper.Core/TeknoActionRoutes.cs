@@ -26,6 +26,14 @@ public static class TeknoActionRoutes
         Both("WartranTroopers","Shoulder","Button3","magazine","TeknoParrot installed WartranTroopers vendor template");
         Both("WartranTroopers","Sense","Button4","down","TeknoParrot installed WartranTroopers vendor template");
         Both("WartranTroopers","Throw","Button1","trigger","TeknoParrot installed Gashaaaan vendor template");
+        const string afterDark="https://techsupporttool.com/knowledgebase/Manuals/Games/After%20Dark%20Dlx/After%20Dark%20Dlx.pdf";
+        rows.Add(new("WartranTroopers","Wheel Left","P1Button5","left",afterDark));
+        rows.Add(new("WartranTroopers","Wheel Right","P1Button6","right",afterDark));
+        rows.Add(new("WartranTroopers","Emergency Stop","Service1","up",afterDark));
+        const string music="TeknoParrot installed MusicGunGun2 vendor template";
+        rows.Add(new("MusicGunGun2","Decision","P1ButtonStart","start",music));
+        rows.Add(new("MusicGunGun2","Direction Left","P1ButtonLeft","left",music));
+        rows.Add(new("MusicGunGun2","Direction Right","P1ButtonRight","right",music));
         rows.Add(new("WartranTroopers","Enter","P1Button5","start","TeknoParrot installed RaccoonRampage vendor template"));
         rows.Add(new("RawThrillsGUN","Toggle Cursor","P1ButtonRight","right","TeknoParrot installed AliensArmageddon vendor template"));
         rows.Add(new("TooSpicy","Pedal Left","P1ButtonLeft","left","TeknoParrot installed 2Spicy vendor template"));
