@@ -324,6 +324,13 @@ var reconnected=GunAssignments.Profile(selection,wirelessGun with {MouseId="new-
 Check(reconnected.Player==1 && reconnected.DevicePlayer==2 && reconnected.MouseId=="new-wireless-mouse" && reconnected.KeyboardId=="new-wireless-keyboard" && reconnected.SerialPort=="COM9",
     "Reconnecting a selected receiver refreshes its interfaces without changing its game slot or hardware player");
 var menuNow=DateTimeOffset.UtcNow;
+var launchChoice=GunAssignments.SelectForLaunch(selection,[firstGun,secondGun,wirelessGun],[(1,secondGun.Id),(2,firstGun.Id)]);
+Check(launchChoice.Bindings.Single(b=>b.Player==1).DevicePlayer==2 && launchChoice.Bindings.Single(b=>b.Player==2).ButtonMap!.GetValueOrDefault("key:53")=="start",
+    "Launch selection swaps physical guns while preserving their firmware identity and learned Start key");
+Check(launchChoice.GunProfiles.Any(b=>b.PhysicalId==wirelessGun.Id),"Launch selection preserves profiles of guns sitting out");
+Throws(()=>GunAssignments.SelectForLaunch(selection,[firstGun,secondGun],[(1,firstGun.Id),(2,firstGun.Id)]),"Launch selection rejects a gun assigned to both players");
+Throws(()=>GunAssignments.SelectForLaunch(selection,[firstGun],[(1,firstGun.Id),(2,secondGun.Id)]),"Launch selection rejects a disconnected gun before changing either player");
+Check(ReferenceEquals(GunAssignments.SelectForLaunch(selection,[],[]),selection),"Launching without a new selection retains saved controls");
 var customMenuGun=BlamconSetup.Learn(BlamconSetup.Learn(new(1,"v",SystemId:"blamcon"),"start","key:70"),"select","key:71");
 var customMenuExit=new ExitGesture(customMenuGun);
 customMenuExit.Key(70,true,menuNow);customMenuExit.Key(71,true,menuNow);
@@ -951,6 +958,12 @@ RButton::y
             "Walking Dead writes reachable Start, trigger, reload and independent aim routes for "+firstModel+" P1 and "+secondModel+" P2");
     }
     string relativeAimPath=Path.Combine(tp,"UserProfiles","relative-aim.xml");
+    walkingFixture.Save(walkingProfile);
+    var launchProfileGame=repair with {Id="launch-choice-fixture",Title="Walking Dead",SourcePath=walkingProfile};
+    TeknoGunSetup.Configure(launchProfileGame,launchChoice.Bindings);
+    var launchProfileXml=XDocument.Load(walkingProfile);
+    Check(launchChoice.Bindings.All(b=>launchProfileXml.Descendants("JoystickButtons").Single(r=>r.Element("InputMapping")?.Value=="P"+b.Player+"ButtonStart").Element("RawInputButton")?.Element("DevicePath")?.Value==b.KeyboardId),
+        "Confirmed launch choices reach both Start bindings in the actual generated TeknoParrot profile");
     var relativeAimFixture=XDocument.Load(repairProfile);
     relativeAimFixture.Root!.Element("ConfigValues")!.Add(new XElement("FieldInformation",new XElement("CategoryName","General"),new XElement("FieldName","Use Relative Input"),new XElement("FieldValue","1")));
     var relativeAimGame=repair with{SourcePath=relativeAimPath};

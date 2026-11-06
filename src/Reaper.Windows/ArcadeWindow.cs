@@ -363,6 +363,17 @@ public sealed class ArcadeWindow : Window
         // Button-only packets often have no absolute coordinates. Retain each
         // gun's own last aim instead of clicking at the shared Windows cursor.
         if (packet.Kind == "mouse") aim.Remember(packet.DeviceId, packet.Absolute, packet.X, packet.Y, packet.VirtualDesktop);
+        if (!session.Active && !launching && Signals(packet).Any(s => s.Down))
+        {
+            var source = guns.FirstOrDefault(g => g.InputIds.Contains(packet.DeviceId, StringComparer.OrdinalIgnoreCase));
+            var saved = source is null ? null : state.Bindings.Concat(state.GunProfiles).FirstOrDefault(b => GunAssignments.Matches(b, source));
+            string trigger = saved?.ControlMap?.GetValueOrDefault("trigger") ?? "mouse:1";
+            if (source?.MouseId is not null && Signals(packet).Any(s => s.Down && s.Token == trigger))
+            {
+                var point = web.PointFromScreen(PacketPoint(packet with { DeviceId = source.MouseId }));
+                Send("gun-shot", new { id = source.Id, x = point.X / Math.Max(1, web.ActualWidth), y = point.Y / Math.Max(1, web.ActualHeight) });
+            }
+        }
         if(calibration is not null)
         {
             try { calibration.Input(packet); }
@@ -1131,7 +1142,13 @@ public sealed class ArcadeWindow : Window
                 { var game = Game(); string aspect = Str("aspect"); if (aspect is not ("4:3" or "16:9")) throw new ArgumentException(I18n.T("Ungültiges Bildformat.")); state.Games[state.Games.IndexOf(game)] = game with { Aspect = aspect }; Persist(); break; }
             case "mark-tested":
                 { var game = Game(); state.Games[state.Games.IndexOf(game)] = game with { Status = "tested" }; Persist(); break; }
-            case "launch": await Launch(Game()); break;
+            case "launch":
+                {
+                    var game = Game();
+                    var selections = payload.TryGetProperty("players", out var players)
+                        ? players.EnumerateArray().Select(p => (p.GetProperty("player").GetInt32(), p.GetProperty("id").GetString() ?? "")).ToArray() : null;
+                    await Launch(game, selections); break;
+                }
             case "export-diagnostics":
                 {
                     var picker = new SaveFileDialog { Title = I18n.T("Diagnose speichern"), Filter = "JSON|*.json", FileName = "reaper-diagnose.json" }; if (picker.ShowDialog() != true) return;
@@ -1226,7 +1243,7 @@ public sealed class ArcadeWindow : Window
         }
         finally { busy = false; Send("busy", new { message = "" }); }
     }
-    private async Task Launch(GameEntry game)
+    private async Task Launch(GameEntry game, IReadOnlyList<(int Player, string Id)>? selections = null)
     {
         // Reserve the entire launch, including dependency checks and helper setup.
         if (launching || session.Active || closing || closeRequested) return;
@@ -1234,16 +1251,31 @@ public sealed class ArcadeWindow : Window
         learningPlayer = null; learningAction = null; learningControl = null; menuLearning = null;
         Send("button-test-ended", new {});
         busy = true; launching = true;
+        var preparation = System.Diagnostics.Stopwatch.StartNew();
         using var cancellation = new CancellationTokenSource();
         launchCancellation = cancellation;
         try
         {
             Send("busy", new { message = I18n.T("Spiel wird geprüft und vorbereitet …") });
+            if (selections is { Count: > 0 })
+            {
+                // The launch reservation covers discovery and assignment too:
+                // another trigger must not change slots during preparation.
+                raw.Refresh();
+                var devices = raw.Devices.ToArray();
+                guns = await Task.Run(() => GunDiscovery.Scan(devices), cancellation.Token);
+                cancellation.Token.ThrowIfCancellationRequested();
+                state = GunAssignments.SelectForLaunch(state, guns, selections);
+                triggerHolds.Clear(); gestures.Clear(); aim.RetainDevices([]);
+                Persist();
+            }
             fixes = await AutomaticFixes.Run([game], store.DirectoryPath,cancellation.Token);
+            Log($"launch preparation {game.Id}: repairs ready at {preparation.ElapsedMilliseconds} ms");
             cancellation.Token.ThrowIfCancellationRequested();
             _ = LaunchRules.Prepare(game);
             Send("busy", new { message = I18n.T("Spiel wird gestartet …") });
             var launchDependencies = await Task.Run(() => RuntimeInstaller.Scan([game]));
+            Log($"launch preparation {game.Id}: dependencies ready at {preparation.ElapsedMilliseconds} ms");
             cancellation.Token.ThrowIfCancellationRequested();
             if (launchDependencies.Findings.Any(f => f.Missing && f.Required && f.PackageId is not null))
             {

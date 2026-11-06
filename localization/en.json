@@ -1034,5 +1034,22 @@
   "Die Konsoleneinstellung wurde nach einer früheren Reparatur geändert. Deine Auswahl bleibt erhalten. Wähle Windows Console Host in den Terminaleinstellungen, um erneut zu testen.": "The console preference changed after an earlier repair. Your choice was preserved. Select Windows Console Host in Terminal settings to retry.",
   "Die Startkonsole des Spiels hat in Windows Terminal den Fensterfokus übernommen. Für neue Konsolen dieses Windows Benutzers wurde Windows Console Host ausgewählt und die bisherige Einstellung gesichert. Wiederhole den Spieltest.": "The game's loader console took foreground focus in Windows Terminal. Selected Windows Console Host for new consoles for this Windows user; saved the previous preference. Repeat the game test.",
   "Die Reparatur der Konsolenkompatibilität konnte nicht abgeschlossen werden: ": "Console compatibility repair could not complete: ",
-  "Schießen / Start": "Shoot / Start"
+  "Schießen / Start": "Shoot / Start",
+  "Wer spielt?": "Who’s playing?",
+  "Schieße mit deiner Gun auf P1 oder P2. Oder wähle einen Spieler und darunter seine Gun.": "Shoot P1 or P2 with the gun you want to use. Or select a player, then choose their gun below.",
+  "Hier anschießen": "Shoot here to join",
+  "Mit der gewünschten Gun zielen und schießen": "Aim and shoot with your chosen gun",
+  "Zugeordnet": "Assigned",
+  "P2 wird in diesem Spiel nicht verwendet": "P2 is not used in this game",
+  "Verfügbare Guns": "Available guns",
+  "Auswahl für P{0}": "Choosing for P{0}",
+  "Gun {0}": "Gun {0}",
+  "Nicht bereit": "Not ready",
+  "Keine Gun erkannt. Du kannst trotzdem mit deiner gespeicherten Konfiguration starten.": "No gun detected. You can still launch with your saved configuration.",
+  "P1 zuordnen oder mit der gespeicherten Konfiguration starten.": "Assign P1 or launch with your saved configuration.",
+  "Die Auswahl wird beim Start auf das Spielprofil übertragen.": "Your selection is applied to the game profile when you launch.",
+  "Jeder Spieler braucht eine eigene Gun.": "Each player needs a separate gun.",
+  "Einzelspieler": "Single player",
+  "Mit gespeicherter Zuordnung starten": "Launch with saved setup",
+  "Nur mit P1 spielen": "Play without P2"
 }

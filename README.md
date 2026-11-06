@@ -25,9 +25,7 @@ brings you back to your library when a game ends.
   platform filters in a library made for the big screen. Aim and pull the trigger,
   use your stick or D-pad, or select the fixed scrolling buttons.
 - **Find games for two.** Player labels distinguish local co-op, local versus, taking turns and online multiplayer. The local multiplayer filter uses verified game metadata, with manufacturer or store links in the details. Unverified editions stay visibly unverified.
-- **Choose P1 and P2.** Assign connected guns, mix supported models and let extra
-  devices sit out. Saved settings belong to each physical gun and survive updates
-  and reconnects.
+- **Choose P1 and P2 before you play.** The launch screen shows large player targets and all connected guns. Shoot P1 or P2 with the gun you want to use, or choose a player and select their gun below. Mix supported models, swap players or let P2 sit out. The confirmed selection feeds the game profile; learned controls and firmware identities stay with each physical gun. You can also launch with your saved setup.
 - **Recover a stalled Vyper.** Restart just the selected USB gun from Gun Studio. Windows asks for administrator permission; calibration and mappings are preserved.
 - **Understand every button.** Gun Studio shows model illustrations, live button
   highlights, guided input capture and editable action bindings.

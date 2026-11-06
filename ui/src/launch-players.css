@@ -1,0 +1,35 @@
+.launch-modal:has(.launch-players){width:min(1100px,94vw);max-height:90vh;display:block;padding:32px 40px;overflow:auto;}
+.launch-players h2{margin:0;font-size:2.4rem;letter-spacing:-.025em;}
+.launch-game-title{color:#ffab8e;margin:8px 0;font-size:1.1rem;}
+.launch-instruction{color:#c0cada;max-width:70ch;line-height:1.5;margin-bottom:24px;}
+.launch-slots{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+.launch-player{position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;min-height:230px;border:2px solid #415069;border-radius:14px;background:#192232;padding:20px;color:#f2f6fc;}
+.launch-player.choosing{border-color:#ff9d7c;}
+.launch-player.assigned{background:#182d33;}
+.launch-sit-out{min-height:48px;padding:12px 16px;color:#c3d9ef;text-decoration:underline;text-underline-offset:4px;float:right;}
+.launch-player:disabled{opacity:.6;cursor:default;}
+.launch-player-number{position:absolute;left:20px;top:14px;font-size:2.5rem;font-weight:800;color:#b6d9ff;}
+.launch-player:nth-child(2) .launch-player-number{color:#ffd298;}
+.launch-player .gun-shape{height:100px;width:190px;max-width:75%;margin:12px 0 0;}
+.launch-player>strong{font-size:1.1rem;}
+.launch-player>span:last-child{display:flex;align-items:center;gap:6px;color:#c7dce4;font-size:.9rem;}
+.launch-guns-heading{display:flex;align-items:center;justify-content:space-between;margin:24px 0 12px;gap:12px;clear:both;}
+.launch-guns-heading h3{margin:0;font-size:1.1rem;}
+.launch-guns-heading>span{color:#ffb79f;}
+.launch-guns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.launch-gun{display:flex;align-items:center;gap:12px;text-align:left;padding:12px;border:1px solid #48556b;border-radius:12px;background:#202938;min-height:88px;}
+.launch-gun .gun-shape{width:86px;height:55px;flex-shrink:0;}
+.launch-gun>span{flex:1;min-width:0;}
+.launch-gun strong,.launch-gun small{display:block;overflow-wrap:anywhere;}
+.launch-gun small{color:#becbdc;margin-top:5px;}
+.launch-gun>b{color:#b7e4d5;}
+.launch-gun:disabled{opacity:.55;}
+.launch-gun.last-shot{border-color:#a7e1c9;background:#233e3a;}
+.launch-player:hover:enabled,.launch-gun:hover:enabled{background:#2c3c4d;}
+.launch-player:focus-visible,.launch-gun:focus-visible{outline:3px solid #b7d8ff;outline-offset:4px;}
+.launch-player-actions{position:sticky;bottom:0;background:#1c2737;display:flex;justify-content:space-between;align-items:center;gap:24px;margin-top:20px;padding:12px 0;z-index:1;}
+.launch-player-actions p{max-width:52ch;line-height:1.5;color:#c0cada;}
+.launch-player-actions .launch-confirm{position:static;flex-shrink:0;min-height:64px;}
+@media(min-width:900px){.launch-guns{grid-template-columns:repeat(3,minmax(0,1fr));}.launch-gun .gun-shape{width:64px;}.launch-gun{gap:8px;}}
+@media(max-height:850px) and (min-width:651px){.launch-modal:has(.launch-players){padding:24px 32px;}.launch-players h2{font-size:2rem;}.launch-instruction{margin:8px 0 16px;}.launch-player{min-height:160px;padding:12px;gap:6px;}.launch-player .gun-shape{height:64px;margin:0;}.launch-player-number{font-size:2rem;}.launch-guns-heading{margin:12px 0;}.launch-player-actions{margin-top:12px;}.launch-player-actions p{margin:0;}.launch-player-actions .launch-confirm{margin-top:0;}}
+@media(max-width:650px){.launch-modal:has(.launch-players){padding:28px 20px;}.launch-slots{gap:10px;}.launch-player{padding:14px 8px;min-height:220px;}.launch-player-number{font-size:2rem;left:12px;}.launch-player>span:last-child{font-size:.8rem;text-align:center;}.launch-guns{grid-template-columns:1fr;}.launch-player-actions{flex-direction:column;align-items:stretch;gap:8px;}.launch-players h2{font-size:2rem;}}

@@ -9,17 +9,28 @@ internal static class AutomaticFixes
     private static readonly SemaphoreSlim gate = new(1, 1);
     public static async Task<FixReport> Run(IEnumerable<GameEntry> games, string data,CancellationToken cancellationToken=default)
     {
+        var timing=System.Diagnostics.Stopwatch.StartNew();
         await gate.WaitAsync(cancellationToken);
         try
         {
             using var identity = WindowsIdentity.GetCurrent();
             bool admin = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
             var entries=games.ToArray();
+            void Phase(string name)
+            {
+                try { Directory.CreateDirectory(data); File.AppendAllText(Path.Combine(data,"launch-preparation.log"),$"{DateTimeOffset.Now:o} {string.Join(",",entries.Select(g=>g.Id))} {name}: {timing.ElapsedMilliseconds} ms{Environment.NewLine}"); }
+                catch (IOException) { } catch (UnauthorizedAccessException) { }
+                timing.Restart();
+            }
+            Phase("repair-gate");
             var report=await Task.Run(() => KnownFixes.Apply(entries, data, admin, package => Prepare(package, data,cancellationToken),cancellationToken),cancellationToken);
+            Phase("known-fixes");
             var controls=await ControlMaintenance.Run(entries,data,cancellationToken);
+            Phase("control-maintenance");
             cancellationToken.ThrowIfCancellationRequested();
             var selected=entries.Select(g=>g.Id).ToHashSet();
             var consoleFindings=ConsoleCompatibility.Apply(entries,data);
+            Phase("console-compatibility");
             var findings=report.Findings.Concat(consoleFindings).Concat(controls.Games.Where(g=>selected.Contains(g.GameId)&&g.Status!="mapping-checked").Select(g=>new FixFinding(g.GameId,g.Title,"control-completeness","needs-action",
                 string.Join(" · ",g.Players.SelectMany(p=>p.Issues.Select(i=>"P"+p.Player+": "+i)).DefaultIfEmpty(string.IsNullOrWhiteSpace(g.Note)?I18n.T("Vollständige Spielbelegung benötigt eine Titelprüfung."):g.Note)),[Path.Combine(data,"controls-audit.json")]))).ToArray();
             var combined=report with {Findings=findings};

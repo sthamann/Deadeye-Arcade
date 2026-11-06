@@ -54,6 +54,7 @@ import { MediaPreview } from "./MediaPreview";
 import { releaseYear, sortLibrary } from "./LibraryOrder";
 import { PlayerInfo, supportsLocalPlayers } from "./PlayerSupport";
 import { FilePicker, ArcadeKeyboard, type PickerState } from "./ArcadeDialogs";
+import {LaunchPlayers} from './LaunchPlayers';
 type Page = "play" | "guns" | "import" | "settings";
 type Modal =
   | {
@@ -294,6 +295,10 @@ function App() {
         if (payload.status === "ended") setJustEnded(true);
       }
       if(type==="range-aim"){if(rangeRef.current)window.dispatchEvent(new CustomEvent("deadeye-range-aim",{detail:payload}));return;}
+      if(type==="gun-shot"){
+        if(modalRef.current?.type==="launch")window.dispatchEvent(new CustomEvent('deadeye-gun-shot',{detail:payload}));
+        return;
+      }
       if (type === "gun-input") {setGunSignal(payload);if(rangeRef.current){window.dispatchEvent(new CustomEvent("deadeye-range-input",{detail:payload}));return;}}
       if (type === "button-test-ended") {
         buttonTestRef.current = null;
@@ -321,6 +326,10 @@ function App() {
       }
       if (type === "input") {
         if(rangeRef.current)return;
+        if(modalRef.current?.type==='launch' && payload.action==='shoot' && payload.kind==='keyboard')return;
+        // The launch picker handles identified guns itself, including guns
+        // without a player slot. Do not activate its target a second time.
+        if(modalRef.current?.type==='launch' && payload.kind==='mouse' && stateRef.current.guns?.some(g=>g.mouseId?.toLowerCase()===payload.deviceId?.toLowerCase())) return;
         if (stateRef.current.remoteSession) return;
         const input = payload as Input;
         setLastInput(input);
@@ -1623,60 +1632,9 @@ function App() {
                 </button>
               </>
             ) : modal.type === "launch" ? (
-              <>
-                <div className="launch-information">
-                  <span className="eyebrow">
-                    {modal.game.platform.toUpperCase()}
-                    {" " + t("\u00B7 ERSTER START")}
-                  </span>
-                  <h2>{modal.game.title}</h2>
-                  {modal.game.description && <p className="game-description" lang="en">{modal.game.description}</p>}
-                  {(modal.game.releaseYear || modal.game.releaseInfo || modal.game.hardware) && <dl className="game-facts">
-                    {(modal.game.releaseYear || modal.game.releaseInfo) && <div><dt>{t("Erscheinungsjahr")}</dt><dd>{[modal.game.releaseYear, modal.game.releaseInfo].filter(Boolean).join(" · ")}</dd></div>}
-                    {modal.game.hardware && <div><dt>{t("Original-Hardware")}</dt><dd>{modal.game.hardware}</dd></div>}
-                  </dl>}
-                  <p>
-                    {t(
-                      "Die App startet dein gespeichertes Profil. Ob Zielen, Tasten, Pedal und zwei Spieler im Spiel funktionieren, pr\u00FCfen wir auf deinem PC.",
-                    )}
-                  </p>
-                  <div className="launch-checks">
-                    <span>
-                      <Check size={16} />
-                      {" " + t("Vorhandenen Starter verwenden")}
-                    </span>
-                    <span>
-                      <Check size={16} />
-                      {" " +
-                        t(
-                          "RS3-Bildformat setzen, wenn ein COM-Port zugeordnet ist",
-                        )}
-                    </span>
-                    <span>
-                      <Check size={16} />
-                      {" " + t("Nach Spielende ins Men\u00FC zur\u00FCckkehren")}
-                    </span>
-                  </div>
-                  <div className="exit-reminder">
-                    <Keyboard size={19} />
-                    <span>
-                      {t(
-                        "Abzug mindestens 10 Sekunden halten: Spielmen\u00FC mit Neustart, Beenden und Tasten\u00FCbersicht. Danach loslassen. Start + M\u00FCnze etwa 2 Sekunden: direkt beenden. Tastatur: F10 Men\u00FC \u00B7 F12 beenden.",
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  className="primary launch-confirm"
-                  onClick={() => {
-                    send("launch", { id: modal.game.id });
-                    setModal(null);
-                  }}
-                >
-                  <Play size={18} />
-                  {" " + t("Jetzt starten")}
-                </button>
-              </>
+              <LaunchPlayers state={state} game={modal.game} launch={players=>{
+                send("launch", {id:modal.game.id, players}); setModal(null);
+              }}/>
             ) : (
               <>
                 <span className="eyebrow">

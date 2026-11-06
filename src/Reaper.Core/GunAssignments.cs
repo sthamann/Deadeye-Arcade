@@ -4,6 +4,25 @@ namespace Reaper.Core;
 // every gun, including guns which are currently sitting out.
 public static class GunAssignments
 {
+    public static LibraryState SelectForLaunch(LibraryState state, IReadOnlyList<PhysicalGun> guns, IReadOnlyList<(int Player, string Id)> selections)
+    {
+        if (selections.Count == 0) return state;
+        if (selections.Count > 2 || !selections.Any(s => s.Player == 1) || selections.Any(s => s.Player is not (1 or 2)) ||
+            selections.Select(s => s.Player).Distinct().Count() != selections.Count ||
+            selections.Select(s => s.Id).Distinct().Count() != selections.Count)
+            throw new ArgumentException(I18n.T("Jeder Spieler braucht eine eigene Gun."));
+        // Validate the complete selection before changing either slot. Firmware
+        // player numbers and learned controls stay with the physical device.
+        var selected = selections.Select(s => Profile(state, guns.FirstOrDefault(g => g.Id == s.Id)
+            ?? throw new InvalidOperationException(I18n.T("Die ausgewählte Gun ist nicht mehr verbunden.")), s.Player)).ToList();
+        if (selected.Select(b => b.MouseId).Distinct(StringComparer.OrdinalIgnoreCase).Count() != selected.Count)
+            throw new ArgumentException(I18n.T("Jeder Spieler braucht eine eigene Gun."));
+        foreach (var saved in state.Bindings) state = Remember(state, saved);
+        state = state with { Bindings = selected, Settings = state.Settings with { ManualGunAssignments = true } };
+        foreach (var binding in selected) state = Remember(state, binding);
+        return state;
+    }
+
     public static bool Matches(GunBinding binding, PhysicalGun gun) =>
         binding.PhysicalId == gun.Id || string.Equals(binding.MouseId, gun.MouseId, StringComparison.OrdinalIgnoreCase);
 
