@@ -315,3 +315,7 @@ web server.
 Deadeye Arcade's application code uses the **[MIT License](LICENSE)**.
 Third-party components retain their own terms.
 [Third-party notices](THIRD-PARTY.md).
+
+## Author
+
+Built by [Stefan Hamann](https://stefan-hamann.de/), co-founder of Shopware and author of the handbook [Agentic Commerce](https://www.agentic-commerce.sh/).
